@@ -4,6 +4,6 @@ import org.springframework.stereotype.Repository;
 import org.blogapp.blogapp.model.Blog;
 
 @Repository
-public interface BlogRepository extends JpaRepository<Blog, Long> {
+public interface BlogRepository extends JpaRepository<Blog, Integer> {
 
 }

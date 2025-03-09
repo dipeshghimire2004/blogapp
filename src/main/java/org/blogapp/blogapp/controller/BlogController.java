@@ -1,7 +1,8 @@
 package org.blogapp.blogapp.controller;
 
-import org.blogapp.blogapp.model.Blog;
-import org.blogapp.blogapp.service.Blogservice;
+import org.blogapp.blogapp.dto.BlogDTO;
+import org.blogapp.blogapp.dto.BlogRequestDTO;
+import org.blogapp.blogapp.service.BlogService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -12,30 +13,30 @@ import java.util.List;
 public class BlogController {
 
     @Autowired
-    private Blogservice blogservice;
+    private BlogService blogservice;
 
     @GetMapping
-    public List<Blog> getAllBlog(){
+    public List<BlogDTO> getAllBlog(){
         return blogservice.getAllBlogs();
     }
 
     @GetMapping("/{id}")
-    public Blog getBlogById(@PathVariable long id){
-        return blogservice.getBlogById(id).orElseThrow(()->new RuntimeException("Blog not found"));
+    public BlogDTO getBlogById(@PathVariable int id){
+        return blogservice.getBlogById(id);
     }
 
     @PostMapping
-    public Blog addBlog(@RequestBody Blog blog){
-        return blogservice.addBlog(blog);
+    public BlogDTO addBlog(@RequestBody BlogRequestDTO blogRequestDTO){
+        return blogservice.createBlog(blogRequestDTO);
+    }
+    @PutMapping("/{id}")
+    public BlogDTO updateBlog(@PathVariable int id, @RequestBody BlogRequestDTO blogRequestDTO) {
+        return blogservice.updateBlog(id, blogRequestDTO);
     }
 
-    @PutMapping("/{id}")
-    public Blog updateBlog(@PathVariable long id, @RequestBody Blog blog){
-        return blogservice.updateBlog(id, blog);
-    }
     @DeleteMapping("/{id}")
-    public Blog deleteBlog(@PathVariable long id){
-        return blogservice.deleteBlog(id);
+    public void deleteBlog(@PathVariable int id){
+         blogservice.deleteBlog(id);
     }
 }
 
