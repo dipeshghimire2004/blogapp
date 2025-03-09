@@ -4,6 +4,8 @@ import org.blogapp.blogapp.dto.BlogDTO;
 import org.blogapp.blogapp.dto.BlogRequestDTO;
 import org.blogapp.blogapp.service.BlogService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -13,30 +15,37 @@ import java.util.List;
 public class BlogController {
 
     @Autowired
-    private BlogService blogservice;
+    private BlogService blogService;
 
     @GetMapping
     public List<BlogDTO> getAllBlog(){
-        return blogservice.getAllBlogs();
+        List <BlogDTO> blogs = blogService.getAllBlogs();
+        return new ResponseEntity<>(blogs, HttpStatus.OK).getBody();
+
     }
 
     @GetMapping("/{id}")
     public BlogDTO getBlogById(@PathVariable int id){
-        return blogservice.getBlogById(id);
+        BlogDTO blog = blogService.getBlogById(id);
+        return new ResponseEntity<>(blog, HttpStatus.OK).getBody();
     }
 
     @PostMapping
     public BlogDTO addBlog(@RequestBody BlogRequestDTO blogRequestDTO){
-        return blogservice.createBlog(blogRequestDTO);
+        BlogDTO createdBlog = blogService.createBlog(blogRequestDTO);
+        return new ResponseEntity<>(createdBlog, HttpStatus.OK).getBody();
+//        return blogService.createBlog(blogRequestDTO);
     }
     @PutMapping("/{id}")
     public BlogDTO updateBlog(@PathVariable int id, @RequestBody BlogRequestDTO blogRequestDTO) {
-        return blogservice.updateBlog(id, blogRequestDTO);
+        BlogDTO updatedBlog=blogService.updateBlog(id, blogRequestDTO);
+        return new ResponseEntity<>(updatedBlog, HttpStatus.OK).getBody();
     }
 
     @DeleteMapping("/{id}")
-    public void deleteBlog(@PathVariable int id){
-         blogservice.deleteBlog(id);
+    public ResponseEntity<Void> deleteBlog(@PathVariable int id) {
+        blogService.deleteBlog(id);
+        return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }
 }
 

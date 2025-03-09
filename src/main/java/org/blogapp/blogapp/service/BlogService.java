@@ -39,7 +39,7 @@ public class BlogService {
     public BlogDTO getBlogById(int id){
 
         Optional<Blog> blog = blogRepository.findById(id);
-        return blog.map(BlogMapper.INSTANCE::toDTO).orElse(null);
+        return blog.map(BlogMapper.INSTANCE::toDTO).orElseThrow(()->new RuntimeException("Blog not found"));
     }
 
     public BlogDTO createBlog(BlogRequestDTO blogRequestDTO) {
