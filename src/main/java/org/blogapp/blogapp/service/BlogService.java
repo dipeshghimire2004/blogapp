@@ -3,6 +3,7 @@ package org.blogapp.blogapp.service;
 import lombok.RequiredArgsConstructor;
 import org.blogapp.blogapp.dto.BlogDTO;
 import org.blogapp.blogapp.dto.BlogRequestDTO;
+import org.blogapp.blogapp.exception.ResourceNotFoundException;
 import org.blogapp.blogapp.mappper.BlogMapper;
 import org.blogapp.blogapp.model.Blog;
 import org.blogapp.blogapp.repository.BlogRepository;
@@ -39,7 +40,7 @@ public class BlogService {
     public BlogDTO getBlogById(int id){
 
         Optional<Blog> blog = blogRepository.findById(id);
-        return blog.map(BlogMapper.INSTANCE::toDTO).orElseThrow(()->new RuntimeException("Blog not found"));
+        return blog.map(BlogMapper.INSTANCE::toDTO).orElseThrow(()->new ResourceNotFoundException("Blog not found"));
     }
 
     public BlogDTO createBlog(BlogRequestDTO blogRequestDTO) {
@@ -51,7 +52,7 @@ public class BlogService {
     }
     // Update a blog from a request DTO
     public BlogDTO updateBlog(int id, BlogRequestDTO blogRequestDTO) {
-        Blog blog = blogRepository.findById(id).orElseThrow(() -> new RuntimeException("Blog not found"));
+        Blog blog = blogRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Blog not found"));
         blog.setTitle(blogRequestDTO.getTitle());
         blog.setContent(blogRequestDTO.getContent());
         blog = blogRepository.save(blog);
@@ -59,36 +60,9 @@ public class BlogService {
     }
 
     public String deleteBlog(int id){
-        Blog blog=blogRepository.findById(id).orElseThrow(()-> new RuntimeException("Blog not found"));
+        Blog blog=blogRepository.findById(id).orElseThrow(()-> new ResourceNotFoundException("Blog not found"));
         blogRepository.delete(blog);
         return "Blog with ID " + id + " has been deleted successfully.";
     }
 
 }
-
-//    public List<Blog> getAllBlogs(){
-//        return blogRepository.findAll();
-//    }
-//
-//    public Optional<Blog> getBlogById(long id){       //allow null value
-//        return blogRepository.findById(id);
-//    }
-//
-//    public Blog addBlog(Blog blog){
-//        blog.setCreated_at(LocalDateTime.now());
-//        blog.setUpdated_at(LocalDateTime.now());
-//        return blogRepository.save(blog);
-//    }
-//
-//    public Blog updateBlog(long id,Blog blogDetails){
-//        Blog blog =blogRepository.findById(id).orElseThrow(()->new RuntimeException("Blog not found"));
-//        blog.setTitle(blogDetails.getTitle());
-//        blog.setContent(blogDetails.getContent());
-//        blog.setUpdated_at(LocalDateTime.now());
-//        return blogRepository.save(blog);
-//    }
-//    public Blog deleteBlog(Long id){
-//        return blogRepository.findById(id).orElseThrow(()->new RuntimeException("Blog not found"));
-//    }
-
-

@@ -4,6 +4,7 @@ import org.blogapp.blogapp.dto.BlogDTO;
 import org.blogapp.blogapp.dto.BlogRequestDTO;
 import org.blogapp.blogapp.service.BlogService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -32,6 +33,8 @@ public class BlogController {
 
     @PostMapping
     public BlogDTO addBlog(@RequestBody BlogRequestDTO blogRequestDTO){
+        HttpHeaders headers = new HttpHeaders();
+        headers.add("Location","/api/data/123");
         BlogDTO createdBlog = blogService.createBlog(blogRequestDTO);
         return new ResponseEntity<>(createdBlog, HttpStatus.OK).getBody();
 //        return blogService.createBlog(blogRequestDTO);

@@ -25,6 +25,8 @@ dependencies {
 
     // MapStruct
     implementation("org.mapstruct:mapstruct:1.5.5.Final")
+    implementation("org.jetBrains.kotlin-stdlib")
+    implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
     annotationProcessor ("org.mapstruct:mapstruct-processor:1.5.5.Final")
     runtimeOnly("org.postgresql:postgresql")
     testImplementation("org.springframework.boot:spring-boot-starter-test")

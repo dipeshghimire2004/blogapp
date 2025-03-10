@@ -6,7 +6,7 @@ import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.context.request.WebRequest;
 
-@ControllerAdvice
+@ControllerAdvice   //ensures the methods inside exception handlers  across all controllers
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(ResourceNotFoundException.class)
