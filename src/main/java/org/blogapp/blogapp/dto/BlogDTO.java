@@ -1,49 +1,23 @@
 package org.blogapp.blogapp.dto;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import lombok.*;
 
 @Data
 @NoArgsConstructor
-//@AllArgsConstructor
-//@Builder
 public class BlogDTO {
     private int id;
     private String title;
+    private String photoUrl;
     private String content;
     private LocalDateTime created_at;
     private LocalDateTime updated_at;
 
-//    public int getId() {
-//        return id;
+    //custom constructor
+//    public BlogDTO(){
+//        this.photoUrl="http://localhost:8080/api/blog/default.jpg";
 //    }
-//
-//    public void setId(int id) {
-//        this.id = id;
-//    }
-//    public String getTitle() {
-//        return title;
-//    }
-//    public void setTitle(String title) {
-//        this.title = title;
-//    }
-//    public String getContent() {
-//        return content;
-//    }
-//    public void setContent(String content) {
-//        this.content = content;
-//    }
-//    public LocalDateTime getCreated_at() {
-//        return created_at;
-//    }
-//    public void setCreated_at(LocalDateTime created_at) {
-//        this.created_at = created_at;
-//    }
-//    public LocalDateTime getUpdated_at() {
-//        return updated_at;
-//    }
-//    public void setUpdated_at(LocalDateTime updated_at) {
-//        this.updated_at = updated_at;
-//    }
+    public String getPhotoUrl(){
+        return (photoUrl ==null || photoUrl.isEmpty())?"http://localhost:8080/api/blog/default.jpg":photoUrl;
+    }
 }
