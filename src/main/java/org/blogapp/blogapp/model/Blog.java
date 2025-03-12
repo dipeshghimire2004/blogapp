@@ -40,6 +40,4 @@ public class Blog {
     @LastModifiedDate
     @Column(name = "updated_at", nullable = false, updatable = true)
     private LocalDateTime updated_at;
-
-
 }

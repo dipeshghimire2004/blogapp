@@ -8,6 +8,9 @@ import org.blogapp.blogapp.mappper.BlogMapper;
 import org.blogapp.blogapp.model.Blog;
 import org.blogapp.blogapp.repository.BlogRepository;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.CachePut;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -60,6 +63,7 @@ public class BlogService {
         return fileName;
     }
 
+    @CachePut(value="blogs",key="#result.id")
     public BlogDTO createBlog(BlogRequestDTO blogRequestDTO) throws IOException {
         Blog blog = new Blog();
         blog.setTitle(blogRequestDTO.getTitle());
@@ -73,17 +77,22 @@ public class BlogService {
         return BlogMapper.INSTANCE.toDTO(blog);
     }
 
+
+    //get all blogs
     @Transactional(readOnly = true)
     public List<BlogDTO> getAllBlogs() {
         return blogRepository.findAll().stream().map(BlogMapper.INSTANCE::toDTO).collect(Collectors.toList());
     }
 
+    //getBlogById
+    @Cacheable(value="blogs", key="#id")
     @Transactional(readOnly = true)
     public BlogDTO getBlogById(int id) {
         Optional<Blog> blog = blogRepository.findById(id);
         return blog.map(BlogMapper.INSTANCE::toDTO).orElseThrow(() -> new ResourceNotFoundException("Blog not found"));
     }
 
+        @CachePut(value="blogs", key="id")
     public BlogDTO updateBlog(int id, BlogRequestDTO blogRequestDTO) throws IOException {
         Blog blog = blogRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Blog not found"));
         if (blogRequestDTO.getTitle() != null) {
@@ -100,6 +109,7 @@ public class BlogService {
         return BlogMapper.INSTANCE.toDTO(blog);
     }
 
+    @CacheEvict(value="blogs", key="#id")
     public void deleteBlog(int id) {
         Blog blog = blogRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Blog not found"));
         blogRepository.delete(blog);
