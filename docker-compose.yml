@@ -1,0 +1,50 @@
+services:
+  postgres-dev:
+    image: postgres:15.10  # Uses PostgreSQL version 15.10 as the base image.
+    container_name: postgres-dev  # Assigns a specific name to the container for easy reference.
+    environment:
+      POSTGRES_USER: postgres  # Sets the database username.
+      POSTGRES_PASSWORD: postgres  # Sets the database password.
+      POSTGRES_DB: postgres  # Creates a default database named "postgres".
+    ports:
+      - "5434:5432"  # Maps port 5434 on the host machine to the default PostgreSQL port (5432) inside the container.
+
+  redis:
+    image: redis:7.0-alpine
+    container_name: redis
+    ports:
+      - "6379:6379"
+
+  localstack:
+    image: localstack/localstack:latest  # Uses the latest version of LocalStack.
+    container_name: localstack  # Assigns a fixed name to the container.
+    #    ports:
+    #      - "4566:4566" # Maps the LocalStack API gateway port.
+    #      - "4572:4572" # Maps the S3 service port.
+    environment:
+      - SERVICES=s3  # Enables only the S3 service in LocalStack.
+      - DEFAULT_REGION=us-east-1  # Sets the AWS region for the local environment.
+      - AWS_ACCESS_KEY_ID=test  # Defines a test AWS access key.
+      - AWS_SECRET_ACCESS_KEY=test  # Defines a test AWS secret key.
+    volumes:
+      - ./localstack_data:/tmp/localstack_data  # Mounts a local directory to persist data across container restarts.
+
+  blogapp:
+    image: blogapp-backend  # Uses an existing Docker image named "blogapp-backend".
+    build:
+      context: .  # The Dockerfile is located in the current directory.
+      dockerfile: Dockerfile  # Specifies the Dockerfile for building the image.
+    ports:
+      - "8085:8085"  # Maps port 8084 of the container to port 8084 on the host.
+    depends_on:
+      - redis
+      - localstack  # Ensures LocalStack starts before this service.
+      - postgres-dev  # Ensures PostgreSQL starts before this service.
+    environment:
+      - AWS_ENDPOINT=http://localstack:4566  # Configures the app to use LocalStack's AWS endpoint.
+      - AWS_REGION=us-east-1  # Specifies the AWS region.
+      - AWS_ACCESS_KEY_ID=test  # Sets a test AWS access key.
+      - AWS_SECRET_ACCESS_KEY=test  # Sets a test AWS secret key.
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres-dev:5432/postgres  # Connects the app to the PostgreSQL database.
+      - SPRING_DATASOURCE_USERNAME=postgres  # Database username.
+      - SPRING_DATASOURCE_PASSWORD=postgres  # Database password.
