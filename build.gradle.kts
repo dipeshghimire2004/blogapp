@@ -47,10 +47,13 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-security:3.4.4")
     implementation("org.springframework.boot:spring-boot-starter-validation")
 
+    //swagger
+    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.6")
 
     //mapstruct
     implementation("org.mapstruct:mapstruct:1.5.5.Final")
     annotationProcessor("org.mapstruct:mapstruct-processor:1.5.5.Final")
+
     //localstack
     implementation("com.amazonaws:aws-java-sdk:1.12.782")
     implementation("com.amazonaws:aws-java-sdk-s3:1.12.782")

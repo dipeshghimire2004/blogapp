@@ -54,14 +54,14 @@ public class AuthenticationService {
             throw new UserAlreadyExistsException("Username already exists: " + request.getUsername());
         }
         // Create and save user
-        User user = userMapper.toEntity(
-                request,
-                passwordEncoder.encode(request.getPassword())
-        );
+        String encodedPassword = passwordEncoder.encode(request.getPassword());
+        User user = userMapper.toEntity(request, encodedPassword, role);
         User savedUser = userRepository.save(user);
         logger.info("User {} registered successfully", request.getUsername());
         return userMapper.toDto(savedUser);
     }
+
+
 
     /**
      * Authenticates a user and returns a JWT token, caching user details.

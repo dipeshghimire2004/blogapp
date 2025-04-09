@@ -21,6 +21,8 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
+import org.springframework.web.multipart.MultipartFile;
+
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -40,9 +42,13 @@ public class BlogPostService {
     private BlogPostMapper blogPostMapper;
 
 
-    public BlogPostService(PostRepository postRepository, BlogPostMapper blogPostMapper) {
+    @Autowired
+    private final S3Service s3Service;
+
+    public BlogPostService(PostRepository postRepository, BlogPostMapper blogPostMapper, S3Service s3Service) {
         this.postRepository = postRepository;
         this.blogPostMapper = blogPostMapper;
+        this.s3Service = s3Service;
     }
 
     /**
@@ -74,32 +80,21 @@ public class BlogPostService {
     /**
      * Creates a new blog post
      * @param postRequestDTO the blog post request data
-     * @param imageUrl the URL of the uploaded image
+     * @param image the URL of the uploaded image
      * @return the created BlogPostResponseDTO
      */
     @Transactional
-    public BlogPostResponseDTO createPost(@Valid BlogPostRequestDTO postRequestDTO, String imageUrl) {
+    public BlogPostResponseDTO createPost(@Valid BlogPostRequestDTO postRequestDTO, MultipartFile image) {
         logger.info("Creating new blog post with title: {}", postRequestDTO.getTitle());
         User currentUser= getCurrentUser();
-        BlogPost post = BlogPost.builder()
-                .title(postRequestDTO.getTitle())
-                .content(postRequestDTO.getContent())
-                .imageUrl(imageUrl)
-                .user(currentUser)
-                .build();
+        String imageUrl= image!=null && !image.isEmpty()? s3Service.uploadFile(image): postRequestDTO.getImageUrl();
+        BlogPost post = blogPostMapper.toEntity(postRequestDTO);
+        post.setUser(currentUser);
+        post.setImageUrl(imageUrl);
+
         BlogPost savedPost = postRepository.save(post);
         return blogPostMapper.toDto(savedPost);
     }
-//    @Transactional
-//    public BlogPostResponseDTO createPost(@Valid BlogPostRequestDTO postRequestDTO, String imageUrl) {
-//        logger.info("Creating new blog post with title: {}", postRequestDTO.getTitle());
-//        BlogPost post = new BlogPost();
-//        post.setTitle(postRequestDTO.getTitle());
-//        post.setContent(postRequestDTO.getContent());
-//        post.setImageUrl(imageUrl);
-//        BlogPost savedPost = postRepository.save(post);
-//        return BlogPostMapper.toDto(savedPost);
-//    }
 
 
     /**
@@ -143,10 +138,11 @@ public class BlogPostService {
         User currentUser = getCurrentUser();
         if(!existingPost.getUser().getUsername().equals(currentUser.getUsername()) &&
         currentUser.getRole() != Role.ADMIN) {
-            logger.error("User {} attempted to deletet post {} by Owner id {}", currentUser.getUsername(), id, existingPost.getUser().getUsername());
+            logger.error("User {} attempted to delete post {} by Owner id {}", currentUser.getUsername(), id, existingPost.getUser().getUsername());
             throw new UnauthorizedException("You can only delete your own posts");
         }
-        postRepository.delete(existingPost);
+        existingPost.setDeleted(true);
+        postRepository.save(existingPost);
         logger.info("Post with ID {} deleted successfully", id);
     }
 

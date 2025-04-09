@@ -20,6 +20,7 @@ import lombok.Data;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.Where;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
@@ -30,6 +31,7 @@ import java.time.LocalDateTime;
 @Table(name="blog_posts")  //for auditing (requires spring-data-jpa dependency and @EnableJpaAuditing in a config class).
 @EntityListeners(AuditingEntityListener.class)
 @Data
+@Where(clause="deleted=false")  // Only fetch non-deleted posts
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder        //added for cleaner  object creation
@@ -68,4 +70,7 @@ public class BlogPost {
     @LastModifiedDate
     @Column(name="updated_at", nullable=false, updatable=true)
     private LocalDateTime updatedAt;
+
+    @Column(name="deleted", nullable=false)
+    private boolean deleted=false;
 }
