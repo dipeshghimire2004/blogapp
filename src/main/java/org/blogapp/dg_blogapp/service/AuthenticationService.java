@@ -1,7 +1,7 @@
 package org.blogapp.dg_blogapp.service;
 
 import com.amazonaws.services.elasticache.model.UserAlreadyExistsException;
-import org.blogapp.dg_blogapp.dto.loginResponse;
+import org.blogapp.dg_blogapp.dto.LoginResponse;
 import org.blogapp.dg_blogapp.dto.LoginRequest;
 import org.blogapp.dg_blogapp.dto.RegisterRequest;
 import org.blogapp.dg_blogapp.dto.UserResponseDTO;
@@ -67,7 +67,7 @@ public class AuthenticationService {
      * Authenticates a user and returns a JWT token, caching user details.
      */
     @Cacheable(value = "userCache", key = "#request.username")
-    public loginResponse authenticate(LoginRequest request) {
+    public LoginResponse authenticate(LoginRequest request) {
         logger.info("Authenticating user: {}", request.getUsername());
         try {
             authenticationManager.authenticate(
@@ -85,8 +85,9 @@ public class AuthenticationService {
                     logger.error("User {} not found", request.getUsername());
                     return new UsernameNotFoundException("User not found: " + request.getUsername());
                 });
-        String jwtToken = jwtService.generateToken(user);
+        String accessToken = jwtService.generateAccessToken(user);
+        String refreshToken = jwtService.generateRefreshToken(user);
         logger.info("User {} authenticated successfully", request.getUsername());
-        return new loginResponse(jwtToken);
+        return new LoginResponse(accessToken, refreshToken);
     }
 }

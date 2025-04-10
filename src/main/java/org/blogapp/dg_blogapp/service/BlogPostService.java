@@ -32,11 +32,11 @@ import java.util.stream.Collectors;
 @Service
 @Validated
 //@RequiredArgsConstructor
-public class BlogPostService {
+public class BlogPostService extends GenericService<BlogPost, Integer> {
     private static final Logger logger = LoggerFactory.getLogger(BlogPostService.class);
 
-    @Autowired
-    private PostRepository postRepository;
+//    @Autowired
+//    private PostRepository postRepository;
 
     @Autowired
     private BlogPostMapper blogPostMapper;
@@ -45,8 +45,8 @@ public class BlogPostService {
     @Autowired
     private final S3Service s3Service;
 
-    public BlogPostService(PostRepository postRepository, BlogPostMapper blogPostMapper, S3Service s3Service) {
-        this.postRepository = postRepository;
+    public BlogPostService( BlogPostMapper blogPostMapper, S3Service s3Service) {
+//        this.postRepository = postRepository;
         this.blogPostMapper = blogPostMapper;
         this.s3Service = s3Service;
     }
@@ -57,7 +57,7 @@ public class BlogPostService {
      */
     public List<BlogPostResponseDTO> getAllPosts() {
         logger.info("Fetching  all blog posts");
-        return postRepository.findAll().stream()
+        return findAll().stream()
                 .map(blogPostMapper::toDto)
                 .collect(Collectors.toList());
     }
@@ -67,13 +67,11 @@ public class BlogPostService {
      * @param id the id oft the blogpost
      * @return the blogPostResponseDTO
      */
+    // Reuse generic findById and map to DTO
     public BlogPostResponseDTO getPostById(int id) {
-        logger.info("Fetching post by ID: {}", id);
-        BlogPost post = postRepository.findById(id)
-                .orElseThrow(() -> {
-                    logger.error("Post with ID {} not found", id);
-                    return new BlogPostNotFoundException("Post not found with id: " + id);
-                });
+        logger.info("Fetching post with ID: {}", id);
+        BlogPost post = findById(id)
+                .orElseThrow(() -> new BlogPostNotFoundException("Post not found with id: " + id));
         return blogPostMapper.toDto(post);
     }
 
@@ -92,7 +90,7 @@ public class BlogPostService {
         post.setUser(currentUser);
         post.setImageUrl(imageUrl);
 
-        BlogPost savedPost = postRepository.save(post);
+        BlogPost savedPost = save(post);
         return blogPostMapper.toDto(savedPost);
     }
 
@@ -107,7 +105,7 @@ public class BlogPostService {
     @Transactional
     public BlogPostResponseDTO updatePost(int id, BlogPostRequestDTO postRequestDTO) {
         logger.info("Updating blog post with ID: {}", id);
-        BlogPost existingPost = postRepository.findById(id)
+        BlogPost existingPost = findById(id)
                 .orElseThrow(() -> {
                     logger.error("Post with ID {} not found", id);
                     return new BlogPostNotFoundException("Post not found with id: " + id);
@@ -122,14 +120,14 @@ public class BlogPostService {
         existingPost.setTitle(postRequestDTO.getTitle());
         existingPost.setContent(postRequestDTO.getContent());
         existingPost.setImageUrl(postRequestDTO.getImageUrl());
-        BlogPost updatedPost = postRepository.save(existingPost);
+        BlogPost updatedPost = save(existingPost);
         return blogPostMapper.toDto(updatedPost);
     }
 
     @Transactional
     public void deletePost(int id) {
         logger.info("Deleting post by ID: {}", id);
-        BlogPost existingPost = postRepository.findById(id)
+        BlogPost existingPost = findById(id)
                 .orElseThrow(() -> {
                     logger.error("Post with ID {} not found", id);
                     return new BlogPostNotFoundException("Post not found with id: " + id);
@@ -142,7 +140,7 @@ public class BlogPostService {
             throw new UnauthorizedException("You can only delete your own posts");
         }
         existingPost.setDeleted(true);
-        postRepository.save(existingPost);
+        save(existingPost);
         logger.info("Post with ID {} deleted successfully", id);
     }
 

@@ -43,8 +43,9 @@ public class BlogPostController {
      * @return a list of blog posts
      */
     @Operation(summary = "Get all blog posts", description = "Retrieves a list of all non-deleted blog posts")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Successfully retrieved posts")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Successfully retrieved list"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized")
     })
     @GetMapping()
     public ResponseEntity<List<BlogPostResponseDTO>> getAllPosts() {
@@ -60,9 +61,10 @@ public class BlogPostController {
      * @param image      the optional image file
      * @return the created blog post
      */
-    @Operation(summary = "Create a blog post", description = "Creates a new blog post with optional image upload")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "201", description = "Post created successfully"),
+    @Operation(summary = "Create a new blog post", description = "Creates a blog post with optional image upload")
+    @ApiResponses({
+            @ApiResponse(responseCode = "201", description = "Post created"),
+            @ApiResponse(responseCode = "400", description = "Invalid input"),
             @ApiResponse(responseCode = "401", description = "Unauthorized")
     })
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -79,6 +81,11 @@ public class BlogPostController {
      * @param id the ID of the blog post
      * @return the blog post
      */
+    @Operation(summary = "Get a blog post by ID", description = "Fetches a specific blog post by its ID")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Post found"),
+            @ApiResponse(responseCode = "404", description = "Post not found")
+    })
     @GetMapping("/{id}")
     public ResponseEntity<BlogPostResponseDTO> getPostById(@PathVariable int id){
         logger.info("Received request to retrieve a blog post with id {}",id);
@@ -87,7 +94,12 @@ public class BlogPostController {
     }
 
 
-
+    @Operation(summary = "Update a blog post", description = "Updates an existing blog post (author or admin only)")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Post updated"),
+            @ApiResponse(responseCode = "403", description = "Forbidden"),
+            @ApiResponse(responseCode = "404", description = "Post not found")
+    })
     @PutMapping("/{id}")
     public ResponseEntity<BlogPostResponseDTO> updatePost(@PathVariable int id,@Valid @RequestBody BlogPostRequestDTO postRequestDTO){
         logger.info("Received request to update a blog post with id {}",id);
@@ -95,6 +107,13 @@ public class BlogPostController {
         return ResponseEntity.ok(updatePost);
     }
 
+
+    @Operation(summary = "Soft delete a blog post", description = "Marks a blog post as deleted (author or admin only)")
+    @ApiResponses({
+            @ApiResponse(responseCode = "204", description = "Post deleted"),
+            @ApiResponse(responseCode = "403", description = "Forbidden"),
+            @ApiResponse(responseCode = "404", description = "Post not found")
+    })
     @DeleteMapping("/{id}")
     public ResponseEntity<BlogPostResponseDTO> deletePost(@PathVariable int id){
         logger.info("Received request to delete a blog post with id {}",id);
