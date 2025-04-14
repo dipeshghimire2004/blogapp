@@ -32,10 +32,11 @@ import org.blogapp.dg_blogapp.model.Role;
 @Entity
 @Table(name = "users")
 @Data
-@Where(clause="deleted=false")
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+//@Where(clause="deleted=false")
+
 public class User implements UserDetails {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -62,6 +63,7 @@ public class User implements UserDetails {
     @OneToMany(mappedBy="user", cascade= CascadeType.ALL, orphanRemoval=true)
     private List<BlogPost> posts;
 
+
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return List.of(new SimpleGrantedAuthority("ROLE_" + role.name()));
@@ -80,8 +82,5 @@ public class User implements UserDetails {
     public boolean isEnabled() {
         return true;
     }
-
-    @Column(name="deleted", nullable=false)
-    private boolean deleted=false;
 }
 

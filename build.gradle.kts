@@ -27,7 +27,7 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-devtools:3.4.3")
 
     //redis
-    implementation("org.springframework.boot:spring-boot-starter-data-redis:3.4.4")
+//    implementation("org.springframework.boot:spring-boot-starter-data-redis:3.4.4")
 
 
 
@@ -56,6 +56,7 @@ dependencies {
 
     //localstack
     implementation("com.amazonaws:aws-java-sdk:1.12.782")
+//    implementation("com.amazonaws:aws-java-sdk:2.28.29")
     implementation("com.amazonaws:aws-java-sdk-s3:1.12.782")
 
 

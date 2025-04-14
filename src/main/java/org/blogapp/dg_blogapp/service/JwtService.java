@@ -54,12 +54,12 @@ public class JwtService {
                 .compact();
     }
 
-    public String generateRefreshToken(UserDetails user) {
+    public String generateRefreshToken(User user) {
         String token = UUID.randomUUID().toString();
         RefreshToken refreshToken = RefreshToken.builder()
                 .token(token)
                 .user(user)
-                .expiryDate(Instant.now().plusMillis(REFRESH_TOKEN_EXPIRY))
+                .expiryDate(Instant.now().plusMillis(refreshTokenExpiration))
                 .build();
         refreshTokenRepository.save(refreshToken);
         return token;
@@ -75,7 +75,7 @@ public class JwtService {
                 .getSubject();  //get the subject (username)
     }
 
-    public boolean validateToken(String token, UserDetails user) {
+    public boolean isAccessTokenValid(String token, UserDetails user) {
         try{
             Claims claims= Jwts.parser()
                     .build()
@@ -98,7 +98,7 @@ public class JwtService {
             throw new RuntimeException("Refresh token expired");
         }
 
-        UserDetails user = storedToken.getUser();
+        User user = storedToken.getUser();
         refreshTokenRepository.delete(storedToken);
 
 //        Generate new token
@@ -115,4 +115,5 @@ public class JwtService {
         byte[] keyBytes = Decoders.BASE64.decode(secretKey);
         return Keys.hmacShaKeyFor(keyBytes);
     }
+
 }

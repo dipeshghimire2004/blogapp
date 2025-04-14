@@ -5,11 +5,13 @@ import org.blogapp.dg_blogapp.dto.BlogPostResponseDTO;
 import org.blogapp.dg_blogapp.model.BlogPost;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
+import org.mapstruct.ReportingPolicy;
 
 /**
  * Mapper class to convert between BlogPost entity and DTOs
  */
-@Mapper(componentModel = "spring")
+@Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.IGNORE)
+
 public interface BlogPostMapper {
 
     /**
@@ -30,6 +32,7 @@ public interface BlogPostMapper {
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
+
     BlogPost toEntity(BlogPostRequestDTO blogPostRequestDTO);
 }
 

@@ -28,5 +28,5 @@ public class RegisterRequest {
     private String email;
 
     @Builder.Default
-    private Role role = Role.USER; // Default role
+    private Role role = Role.USER; //Default role
 }

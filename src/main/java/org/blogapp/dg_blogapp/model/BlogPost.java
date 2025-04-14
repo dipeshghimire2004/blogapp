@@ -31,10 +31,10 @@ import java.time.LocalDateTime;
 @Table(name="blog_posts")  //for auditing (requires spring-data-jpa dependency and @EnableJpaAuditing in a config class).
 @EntityListeners(AuditingEntityListener.class)
 @Data
-@Where(clause="deleted=false")  // Only fetch non-deleted posts
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder        //added for cleaner  object creation
+@Where(clause="deleted=false")  // Only fetch non-deleted posts
 public class BlogPost {
     @Id     //marks this file as Primary key
     @GeneratedValue(strategy = GenerationType.IDENTITY)     //autoincrement the id
@@ -71,6 +71,7 @@ public class BlogPost {
     @Column(name="updated_at", nullable=false, updatable=true)
     private LocalDateTime updatedAt;
 
+    @Builder.Default
     @Column(name="deleted", nullable=false)
     private boolean deleted=false;
 }

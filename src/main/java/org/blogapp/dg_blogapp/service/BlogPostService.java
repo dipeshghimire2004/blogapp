@@ -35,8 +35,8 @@ import java.util.stream.Collectors;
 public class BlogPostService extends GenericService<BlogPost, Integer> {
     private static final Logger logger = LoggerFactory.getLogger(BlogPostService.class);
 
-//    @Autowired
-//    private PostRepository postRepository;
+    @Autowired
+    private PostRepository postRepository;
 
     @Autowired
     private BlogPostMapper blogPostMapper;
@@ -45,8 +45,8 @@ public class BlogPostService extends GenericService<BlogPost, Integer> {
     @Autowired
     private final S3Service s3Service;
 
-    public BlogPostService( BlogPostMapper blogPostMapper, S3Service s3Service) {
-//        this.postRepository = postRepository;
+    public BlogPostService(PostRepository postRepository, BlogPostMapper blogPostMapper, S3Service s3Service) {
+        super(postRepository);
         this.blogPostMapper = blogPostMapper;
         this.s3Service = s3Service;
     }

@@ -4,6 +4,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 
 
 /**
@@ -23,9 +24,8 @@ public abstract class GenericService<T, ID> {
         return repository.findAll();
     }
 
-    public T findById(ID id) {
-        return repository.findById(id)
-                .orElseThrow(() -> new RuntimeException("No record found with id: " + id));
+    public Optional<T> findById(ID id) {
+        return repository.findById(id);
     }
 
     @Transactional
@@ -35,8 +35,7 @@ public abstract class GenericService<T, ID> {
 
     @Transactional
     public void delete(ID id) {
-        T entity = findById(id);
+        T entity = findById(id).orElseThrow(() -> new IllegalArgumentException("Entity with ID " + id + " not found"));
         repository.delete(entity);
     }
-
 }

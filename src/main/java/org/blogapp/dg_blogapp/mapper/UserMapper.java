@@ -6,11 +6,12 @@ import org.blogapp.dg_blogapp.model.Role;
 import org.blogapp.dg_blogapp.model.User;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
+import org.mapstruct.ReportingPolicy;
 
 /**
  * Mapper class to convert between User entity and DTOs.
  */
-@Mapper(componentModel = "spring")
+@Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.IGNORE)
 public interface UserMapper {
 
     /**
@@ -22,6 +23,8 @@ public interface UserMapper {
      */
     @Mapping(target = "password", source = "encodedPassword")
     @Mapping(target = "role", source = "role")
+//    @Mapping(target = "id", ignore = true)
+//    @Mapping(target = "posts", ignore = true)
     User toEntity(RegisterRequest registerRequest, String encodedPassword, Role role);
 
     /**
