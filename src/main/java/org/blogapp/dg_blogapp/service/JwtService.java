@@ -13,6 +13,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
@@ -23,7 +24,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.util.function.Function;
-
 @Service
 public class JwtService {
     private static final Logger logger = LoggerFactory.getLogger(JwtService.class);
@@ -32,28 +32,31 @@ public class JwtService {
     private final long accessTokenExpiration;
     private final long refreshTokenExpiration;
 
-    public JwtService(@Value("${jwt.secret}") String secretKey, @Value("${jwt.access-token-expiration}")long accessTokenExpiration, @Value("${jwt.refresh-token-expiration}")long refreshTokenExpiration)  {
+    @Autowired
+    private RefreshTokenRepository refreshTokenRepository;
+
+    public JwtService(
+            @Value("${jwt.secret}") String secretKey,
+            @Value("${jwt.access-token-expiration}") long accessTokenExpiration,
+            @Value("${jwt.refresh-token-expiration}") long refreshTokenExpiration) {
         this.secretKey = secretKey;
         this.accessTokenExpiration = accessTokenExpiration;
         this.refreshTokenExpiration = refreshTokenExpiration;
-
     }
 
-    @Autowired
-    private RefreshTokenRepository refreshTokenRepository;
-    /**
-     * Generates a JWT token for the given user.
-     */
+    // Generate Access Token
     public String generateAccessToken(UserDetails user) {
+        Instant now = Instant.now();
         return Jwts.builder()
-                .setSubject(user.getUsername())
+                .subject(user.getUsername())
                 .claim("roles", user.getAuthorities())
-                .setIssuedAt(new Date())
-                .setExpiration(new Date(System.currentTimeMillis() + accessTokenExpiration))
-                .signWith(getSigningKey(), SignatureAlgorithm.HS256)
+                .issuedAt(Date.from(now))
+                .expiration(Date.from(now.plusMillis(accessTokenExpiration)))
+                .signWith(getSigningKey()) // Algorithm inferred automatically
                 .compact();
     }
 
+    // Generate Refresh Token (stored in DB)
     public String generateRefreshToken(User user) {
         String token = UUID.randomUUID().toString();
         RefreshToken refreshToken = RefreshToken.builder()
@@ -65,35 +68,40 @@ public class JwtService {
         return token;
     }
 
-
-    public String extractUsername(String token){
-        return Jwts.parser()
+    // Extract username from token
+    public String extractUsername(String token) {
+        Claims claims = Jwts.parser()
                 .setSigningKey(getSigningKey())
                 .build()
-                .parseClaimsJws(token)
-                .getBody()
-                .getSubject();  //get the subject (username)
+                .parseSignedClaims(token)
+                .getPayload();
+
+        return claims.getSubject();
     }
 
+    // Validate access token
     public boolean isAccessTokenValid(String token, UserDetails user) {
-        try{
-            Claims claims= Jwts.parser()
+        try {
+            Claims claims = Jwts.parser()
+                    .setSigningKey(getSigningKey())
                     .build()
-                    .parseClaimsJws(token)
-                    .getBody();
-                return claims.getSubject().equals(user.getUsername()) && claims.getExpiration().before(new Date());
+                    .parseSignedClaims(token)
+                    .getPayload();
 
-        }
-        catch(Exception e){
+            boolean notExpired = claims.getExpiration().after(new Date());
+            return claims.getSubject().equals(user.getUsername()) && notExpired;
+        } catch (Exception e) {
+            logger.warn("Invalid JWT token: {}", e.getMessage());
             return false;
         }
     }
 
-    public LoginResponse rotateRefreshToken(String refreshToken){
-        RefreshToken storedToken=refreshTokenRepository.findByToken(refreshToken)
+    // Rotate refresh token (generate new pair)
+    public LoginResponse rotateRefreshToken(String refreshToken) {
+        RefreshToken storedToken = refreshTokenRepository.findByToken(refreshToken)
                 .orElseThrow(() -> new RuntimeException("Incorrect refresh token"));
 
-        if(storedToken.getExpiryDate().isBefore(Instant.now())){
+        if (storedToken.getExpiryDate().isBefore(Instant.now())) {
             refreshTokenRepository.delete(storedToken);
             throw new RuntimeException("Refresh token expired");
         }
@@ -101,19 +109,19 @@ public class JwtService {
         User user = storedToken.getUser();
         refreshTokenRepository.delete(storedToken);
 
-//        Generate new token
-        String newAccessToken= generateAccessToken(user);
-        String newRefreshToken= generateRefreshToken(user);
+        String newAccessToken = generateAccessToken(user);
+        String newRefreshToken = generateRefreshToken(user);
 
         return new LoginResponse(newAccessToken, newRefreshToken);
     }
 
-    /**
-     * Converts the base64 secret key into a SigningKey.
-     */
+    // Convert Base64 secret into HMAC key
     private Key getSigningKey() {
         byte[] keyBytes = Decoders.BASE64.decode(secretKey);
         return Keys.hmacShaKeyFor(keyBytes);
     }
 
+    public String getUserIdFromJwtToken() {
+        return SecurityContextHolder.getContext().getAuthentication().getPrincipal().toString();
+    }
 }

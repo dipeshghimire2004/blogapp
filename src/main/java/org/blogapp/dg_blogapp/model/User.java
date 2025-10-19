@@ -5,6 +5,7 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -60,7 +61,7 @@ public class User implements UserDetails {
     private Role role; // Now references standalone Role enum
 
 
-    @OneToMany(mappedBy="user", cascade= CascadeType.ALL, orphanRemoval=true)
+    @OneToMany(fetch= FetchType.EAGER,mappedBy="user", cascade= CascadeType.ALL, orphanRemoval=true)
     private List<BlogPost> posts;
 
 

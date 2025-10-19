@@ -9,7 +9,7 @@ version = "0.0.1-SNAPSHOT"
 
 java {
     toolchain {
-        languageVersion = JavaLanguageVersion.of(17)
+        languageVersion = JavaLanguageVersion.of(21)
     }
 }
 
@@ -26,14 +26,15 @@ dependencies {
 
     implementation("org.springframework.boot:spring-boot-devtools:3.4.3")
 
+    // AWS
+    implementation("software.amazon.awssdk:s3:2.31.6")
+
     //redis
 //    implementation("org.springframework.boot:spring-boot-starter-data-redis:3.4.4")
 
-
-
     // LocalStack (AWS SDK for S3 emulation)
-    implementation("org.springframework.cloud:spring-cloud-starter-aws:2.2.6.RELEASE") // AWS S3 support
-    implementation("org.springframework.cloud:spring-cloud-starter:4.2.1")
+//    implementation("org.springframework.cloud:spring-cloud-starter-aws:2.2.6.RELEASE") // AWS S3 support
+//    implementation("org.springframework.cloud:spring-cloud-starter:4.2.1")
 
     //lombok
     compileOnly("org.projectlombok:lombok:1.18.36")
