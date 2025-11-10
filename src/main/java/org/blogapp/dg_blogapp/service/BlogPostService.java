@@ -3,8 +3,10 @@ package org.blogapp.dg_blogapp.service;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.blogapp.dg_blogapp.dto.BlogPostFilterRequest;
 import org.blogapp.dg_blogapp.dto.BlogPostRequestDTO;
 import org.blogapp.dg_blogapp.dto.BlogPostResponseDTO;
+import org.blogapp.dg_blogapp.dto.PageResponse;
 import org.blogapp.dg_blogapp.exception.BlogPostNotFoundException;
 import org.blogapp.dg_blogapp.exception.UnauthorizedException;
 import org.blogapp.dg_blogapp.mapper.BlogPostMapper;
@@ -13,7 +15,12 @@ import org.blogapp.dg_blogapp.model.Role;
 import org.blogapp.dg_blogapp.model.User;
 import org.blogapp.dg_blogapp.repository.PostRepository;
 import org.blogapp.dg_blogapp.repository.UserRepository;
+import org.blogapp.dg_blogapp.specification.BlogPostSpecification;
 import org.blogapp.dg_blogapp.utils.FileNameGenerator;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -23,6 +30,7 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
@@ -55,8 +63,6 @@ public class BlogPostService {
         log.info("Creating new blog post with title: {}", postRequestDTO.getTitle());
         User currentUser= getCurrentUser();
 
-
-
         String imageUrl = uploadImageFile(currentUser.getId(), image);
         BlogPost post = blogPostMapper.toEntity(postRequestDTO);
         post.setUser(currentUser);
@@ -68,6 +74,48 @@ public class BlogPostService {
 
 
 
+    public PageResponse<BlogPostResponseDTO> getPosts(int pageNo, int pageSize, String sortBy, String sortOrder) {
+        //validation
+        if(pageNo<0) pageNo = 0;
+        if(pageSize<1 || pageSize>80) pageSize = 10;
+
+        //Create sort
+        Sort sort= sortOrder.equalsIgnoreCase("desc")? Sort.by(sortBy).descending(): Sort.by(sortBy).ascending();
+
+        Pageable pageable = PageRequest.of(pageNo, pageSize,sort);
+        Page<BlogPost> blogPosts = postRepository.findAll(pageable);
+
+        //Convert entity to dto
+        List<BlogPostResponseDTO> postResponses = blogPostMapper.toDtoList(blogPosts.getContent());
+
+        // Convert entity page to DTO page
+        return new PageResponse<>(blogPosts, postResponses);
+    }
+
+    public PageResponse<BlogPostResponseDTO> getPostsByTitle(String title, int pageNo, int pageSize) {
+        if(pageNo<0) pageNo = 0;
+        if(pageSize<1 || pageSize>80) pageSize = 10;
+
+        Pageable pageable = PageRequest.of(pageNo, pageSize, Sort.by("createdAt").descending());
+        Page<BlogPost> blogPosts = postRepository.findByTitle(title, pageable);
+
+        List<BlogPostResponseDTO> postResponses = blogPostMapper.toDtoList(blogPosts.getContent());
+
+        return new PageResponse<>(blogPosts, postResponses);
+    }
+
+    public List<BlogPostResponseDTO> getPostsForSearch(BlogPostFilterRequest filter) {
+//        if(pageNo<0) pageNo = 0;
+//        if(pageSize<1 || pageSize>80) pageSize = 10;
+
+//        Pageable pageable = PageRequest.of(pageNo, pageSize, Sort.by("createdAt").descending());
+        List<BlogPost> blogPosts = postRepository.findAll(BlogPostSpecification.build(filter));
+
+//        List<BlogPostResponseDTO> postResponses = blogPostMapper.toDtoList(blogPosts.getContent());
+
+        return blogPostMapper.toDtoList(blogPosts);
+
+    }
 
     /**
      * retrieves all the blogpost
@@ -86,7 +134,7 @@ public class BlogPostService {
      * @return the blogPostResponseDTO
      */
     // Reuse generic findById and map to DTO
-    public BlogPostResponseDTO getPostById(int id) {
+    public BlogPostResponseDTO getPostById(UUID id) {
         log.info("Fetching post with ID: {}", id);
         BlogPost post = postRepository.findById(id)
                 .orElseThrow(() -> new BlogPostNotFoundException("Post not found with id: " + id));
@@ -104,7 +152,7 @@ public class BlogPostService {
      * @throws BlogPostNotFoundException if the post is not found
      */
     @Transactional
-    public BlogPostResponseDTO updatePost(int id, BlogPostRequestDTO postRequestDTO) {
+    public BlogPostResponseDTO updatePost(UUID id, BlogPostRequestDTO postRequestDTO, MultipartFile image) {
         log.info("Updating blog post with ID: {}", id);
         BlogPost existingPost = postRepository.findById(id)
                 .orElseThrow(() -> {
@@ -118,15 +166,17 @@ public class BlogPostService {
             log.warn("User {} attemtpted to update the post {} by Owner id {}", currentUser.getUsername(), id, existingPost.getUser().getUsername());
             throw new UnauthorizedException("You can only update your own posts");
         }
+
+        String imageUrl = uploadImageFile(currentUser.getId(), image);
         existingPost.setTitle(postRequestDTO.getTitle());
         existingPost.setContent(postRequestDTO.getContent());
-        existingPost.setImageUrl(postRequestDTO.getImageUrl());
+        existingPost.setImageUrl(imageUrl);
         BlogPost updatedPost = postRepository.save(existingPost);
         return blogPostMapper.toDto(updatedPost);
     }
 
     @Transactional
-    public void deletePost(int id) {
+    public void deletePost(UUID id) {
         log.info("Deleting post by ID: {}", id);
         BlogPost existingPost = postRepository.findById(id)
                 .orElseThrow(() -> {
@@ -167,21 +217,3 @@ public class BlogPostService {
         return fullPath;
     }
 }
-
-
-
-
-
-//
-//
-//@Validated is a Spring annotation that enables method-level validation using JSR-380 (Jakarta Bean Validation, formerly javax.validation) annotations like @NotNull, @Valid, @Size, etc.
-//
-//It is mainly used with:
-//
-//@Service
-//
-//@Component
-//
-//@Controller
-//
-//So that when a method parameter is annotated with @Valid, Spring can trigger automatic validation before the method logic executes.

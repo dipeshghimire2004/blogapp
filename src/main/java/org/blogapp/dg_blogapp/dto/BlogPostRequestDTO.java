@@ -24,4 +24,8 @@ public class BlogPostRequestDTO {
 
     @Size(max = 255, message = "Image URL must not exceed 255 characters")
     private String imageUrl;
+
+    private boolean featured;
+
+    private String tags;
 }

@@ -1,6 +1,7 @@
 package org.blogapp.dg_blogapp.model;
 
 
+import jakarta.persistence.Basic;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityListeners;
@@ -20,25 +21,27 @@ import lombok.Data;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.SQLRestriction;
 import org.hibernate.annotations.Where;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Entity
-@Table(name="blog_posts")  //for auditing (requires spring-data-jpa dependency and @EnableJpaAuditing in a config class).
+@Table(name= "blog_posts")  //for auditing (requires spring-data-jpa dependency and @EnableJpaAuditing in a config class).
 @EntityListeners(AuditingEntityListener.class)
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder        //added for cleaner  object creation
-@Where(clause="deleted=false")  // Only fetch non-deleted posts
+@SQLRestriction("deleted=false")  // Only fetch non-deleted posts
 public class BlogPost {
     @Id     //marks this file as Primary key
-    @GeneratedValue(strategy = GenerationType.IDENTITY)     //autoincrement the id
-    private int id;
+    @GeneratedValue(strategy = GenerationType.AUTO)     //autoincrement the id
+    private UUID id;
 
     @Column(name="title",length=100,nullable=false)
     @NotBlank(message="title cannot be blank")
@@ -48,8 +51,9 @@ public class BlogPost {
 
 
     @Lob        //large text
-    @Column(name="content", nullable=false)
-    @NotBlank(message="content cannot be blank")
+    @Basic(fetch = FetchType.EAGER)
+    @Column(name="content")
+//    @NotBlank(message="content cannot be blank")
     private String content;
 
 
@@ -61,6 +65,10 @@ public class BlogPost {
     @ManyToOne(fetch= FetchType.EAGER)
     @JoinColumn(name="user_id", nullable=false)
     private User user;
+
+    private boolean featured=false;
+
+    private String tags;
 
     @CreatedDate
     @Column(name="created_at", nullable=false, updatable=false)

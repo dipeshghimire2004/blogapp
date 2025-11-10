@@ -10,13 +10,13 @@ import java.util.UUID;
 @Component
 public class FileNameGenerator {
 
-public String generateProductImageName(MultipartFile file) {
-    String fileName = file.getOriginalFilename();
-    if(fileName==null || fileName.isEmpty()){
-        throw new RuntimeException("Invalid file name");
+    public String generateProductImageName(MultipartFile file) {
+        String fileName = file.getOriginalFilename();
+        if(fileName==null || fileName.isEmpty()){
+            throw new RuntimeException("Invalid file name");
+        }
+        String extension = fileName.substring(fileName.lastIndexOf(".")).toLowerCase();
+        return "certificate_"+ UUID.randomUUID()+extension;
     }
-    String extension = fileName.substring(fileName.lastIndexOf(".")).toLowerCase();
-    return "certificate_"+ UUID.randomUUID()+extension;
-}
 
 }

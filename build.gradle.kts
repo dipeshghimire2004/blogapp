@@ -40,6 +40,8 @@ dependencies {
     compileOnly("org.projectlombok:lombok:1.18.36")
     annotationProcessor("org.projectlombok:lombok:1.18.36")
 
+    //uuid-creator
+    implementation("com.github.f4b6a3:uuid-creator:6.1.1")
 
     //jwt
     implementation("io.jsonwebtoken:jjwt-api:0.12.5")

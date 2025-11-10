@@ -1,7 +1,13 @@
 package org.blogapp.dg_blogapp.exception;
 
-public class UnauthorizedException extends RuntimeException {
+import org.blogapp.dg_blogapp.enums.ErrorCode;
+
+public class UnauthorizedException extends BaseException {
     public UnauthorizedException(String message) {
-        super(message);
+        super(ErrorCode.UNAUTHORIZED,message);
+    }
+
+    public  UnauthorizedException(){
+        super(ErrorCode.UNAUTHORIZED);
     }
 }

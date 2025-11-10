@@ -61,8 +61,8 @@ public class User implements UserDetails {
     private Role role; // Now references standalone Role enum
 
 
-    @OneToMany(fetch= FetchType.EAGER,mappedBy="user", cascade= CascadeType.ALL, orphanRemoval=true)
-    private List<BlogPost> posts;
+//    @OneToMany(fetch= FetchType.EAGER,mappedBy="user", cascade= CascadeType.ALL, orphanRemoval=true)
+//    private List<BlogPost> posts;
 
 
     @Override

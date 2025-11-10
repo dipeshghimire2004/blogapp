@@ -5,6 +5,9 @@ import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.blogapp.dg_blogapp.dto.JwtResponse;
 import org.blogapp.dg_blogapp.dto.LoginResponse;
 import org.blogapp.dg_blogapp.model.RefreshToken;
 import org.blogapp.dg_blogapp.model.User;
@@ -17,6 +20,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
+import javax.crypto.SecretKey;
 import java.security.Key;
 import java.time.Instant;
 import java.util.Date;
@@ -25,24 +29,22 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.function.Function;
 @Service
+@RequiredArgsConstructor
+@Slf4j
 public class JwtService {
     private static final Logger logger = LoggerFactory.getLogger(JwtService.class);
 
-    private final String secretKey;
-    private final long accessTokenExpiration;
-    private final long refreshTokenExpiration;
+    @Value("${jwt.secret}")
+    private String secretKey;
 
-    @Autowired
-    private RefreshTokenRepository refreshTokenRepository;
+    @Value("${jwt.access-token-expiration}")
+    private long accessTokenExpiration;
 
-    public JwtService(
-            @Value("${jwt.secret}") String secretKey,
-            @Value("${jwt.access-token-expiration}") long accessTokenExpiration,
-            @Value("${jwt.refresh-token-expiration}") long refreshTokenExpiration) {
-        this.secretKey = secretKey;
-        this.accessTokenExpiration = accessTokenExpiration;
-        this.refreshTokenExpiration = refreshTokenExpiration;
-    }
+    @Value("${jwt.refresh-token-expiration}")
+    private long refreshTokenExpiration;
+
+    private final RefreshTokenRepository refreshTokenRepository;
+
 
     // Generate Access Token
     public String generateAccessToken(UserDetails user) {
@@ -57,8 +59,9 @@ public class JwtService {
     }
 
     // Generate Refresh Token (stored in DB)
-    public String generateRefreshToken(User user) {
+    public String generateRefreshToken(UserDetails userDetails) {
         String token = UUID.randomUUID().toString();
+        User user= (User) userDetails;
         RefreshToken refreshToken = RefreshToken.builder()
                 .token(token)
                 .user(user)
@@ -68,32 +71,66 @@ public class JwtService {
         return token;
     }
 
+    //extract all calims
+    public Claims extractClaims(String token) {
+        return Jwts.parser()
+                .verifyWith(getSigningKey())    //It parses (reads) that token using your secret key (getSigningKey()).
+                .build()
+                .parseSignedClaims(token)   //It checks if the token’s signature is valid (meaning: not modified or fake).
+                .getPayload();          //Then it returns all the information (claims) inside the token.
+    }
+
+//    What it does:
+//
+//    It uses the first method to get all claims from the token.
+//
+//    But instead of giving you everything, it lets you choose one specific piece of information.
+//
+//    It takes a function (claimsResolver) — which says what part of the claims you want.
+    public <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
+        final Claims claims = extractClaims(token);
+        return claimsResolver.apply(claims);
+    }
+
+
+
     // Extract username from token
     public String extractUsername(String token) {
-        Claims claims = Jwts.parser()
-                .setSigningKey(getSigningKey())
-                .build()
-                .parseSignedClaims(token)
-                .getPayload();
-
-        return claims.getSubject();
+       return extractClaim(token, Claims::getSubject);
     }
+
+    //extract expiration date from token
+    public Date extractExpiration(String token) {
+        return extractClaim(token, Claims::getExpiration);
+    }
+
+    public boolean isTokenExpired(String token) {
+        try{
+            return extractExpiration(token).before(new Date());
+        }catch(Exception e){
+            log.warn("Token expirration check failed", e.getMessage());
+            return true;
+        }
+    }
+
 
     // Validate access token
     public boolean isAccessTokenValid(String token, UserDetails user) {
         try {
-            Claims claims = Jwts.parser()
-                    .setSigningKey(getSigningKey())
-                    .build()
-                    .parseSignedClaims(token)
-                    .getPayload();
-
-            boolean notExpired = claims.getExpiration().after(new Date());
-            return claims.getSubject().equals(user.getUsername()) && notExpired;
+           final String username = extractUsername(token);
+           return username.equals(user.getUsername()) && !isTokenExpired(token);
         } catch (Exception e) {
             logger.warn("Invalid JWT token: {}", e.getMessage());
             return false;
         }
+    }
+
+
+    //validate refresh token from database
+    public boolean isRefreshTokenValid(String token){
+        return refreshTokenRepository.findByToken(token)
+                .map(rt ->rt.getExpiryDate().isAfter(Instant.now()))
+                .orElse(false);
     }
 
     // Rotate refresh token (generate new pair)
@@ -107,16 +144,20 @@ public class JwtService {
         }
 
         User user = storedToken.getUser();
+
+        // Delete old refresh token
         refreshTokenRepository.delete(storedToken);
 
         String newAccessToken = generateAccessToken(user);
         String newRefreshToken = generateRefreshToken(user);
 
+        log.info("Token pair rotated for user :{} ", user.getUsername());
+
         return new LoginResponse(newAccessToken, newRefreshToken);
     }
 
     // Convert Base64 secret into HMAC key
-    private Key getSigningKey() {
+    private SecretKey getSigningKey() {
         byte[] keyBytes = Decoders.BASE64.decode(secretKey);
         return Keys.hmacShaKeyFor(keyBytes);
     }
@@ -124,4 +165,20 @@ public class JwtService {
     public String getUserIdFromJwtToken() {
         return SecurityContextHolder.getContext().getAuthentication().getPrincipal().toString();
     }
+
+    public String getRandomUUID(){
+        return UUID.randomUUID().toString();
+    }
+
+    public JwtResponse getJwtResponse(UserDetails userDetails){
+        String deviceId = getRandomUUID();
+        String accessToken = generateAccessToken(userDetails);
+        String refreshToken = generateRefreshToken(userDetails);
+        return JwtResponse.builder()
+                .accessToken(accessToken)
+                .refreshToken(refreshToken)
+                .build();
+    }
+
+
 }

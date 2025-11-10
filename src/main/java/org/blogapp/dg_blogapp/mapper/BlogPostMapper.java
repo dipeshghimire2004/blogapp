@@ -7,11 +7,12 @@ import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.ReportingPolicy;
 
+import java.util.List;
+
 /**
  * Mapper class to convert between BlogPost entity and DTOs
  */
 @Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.IGNORE)
-
 public interface BlogPostMapper {
 
     /**
@@ -21,6 +22,9 @@ public interface BlogPostMapper {
      */
     @Mapping(target = "authorUsername", source = "user.username")
     BlogPostResponseDTO toDto(BlogPost blogPost);
+
+    @Mapping(target = "authorUsername", source = "user.username")
+    List<BlogPostResponseDTO> toDtoList(List<BlogPost> blogPosts);
 
     /**
      * Converts a BlogPostRequestDTO into a BlogPost entity.

@@ -3,6 +3,7 @@ package org.blogapp.dg_blogapp.config;
 import io.micrometer.common.lang.NonNull;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -45,16 +46,29 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             return;
         }
 
-        String authHeader = request.getHeader("Authorization");
-        String jwt;
-        try{
-            if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-                filterChain.doFilter(request, response);
-                return;
+        String jwt = extractTokenFromCookies(request);
+
+//        String authHeader = request.getHeader("Authorization");
+//        String jwt;
+//        try{
+//            if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+//                filterChain.doFilter(request, response);
+//                return;
+//            }
+            if(jwt==null) {
+            filterChain.doFilter(request, response);
+            return;
             }
 
-            jwt = authHeader.substring(7);
-            final String username = jwtService.extractUsername(jwt);
+
+            try{
+                final String username = jwtService.extractUsername(jwt);
+
+                if(username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+                    UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+                }
+//            jwt = authHeader.substring(7);
+//            final String username = jwtService.extractUsername(jwt);
 
             if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
                 UserDetails userDetails = userDetailsService.loadUserByUsername(username);
@@ -65,18 +79,30 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     SecurityContextHolder.getContext().setAuthentication(authToken);
                 }
             }
-            filterChain.doFilter(request, response);
+
         }
         catch(Exception e){
             log.error(e.getMessage());
         }
+        filterChain.doFilter(request, response);
 
     }
 
-    private String extractToken(HttpServletRequest request) {
-        String bearerToken = request.getHeader("Authorization");
-        if(StringUtils.hasText(bearerToken) && bearerToken.startsWith("Bearer ")) {
-            return bearerToken.substring(7);
+//    private String extractToken(HttpServletRequest request) {
+//        String bearerToken = request.getHeader("Authorization");
+//        if(StringUtils.hasText(bearerToken) && bearerToken.startsWith("Bearer ")) {
+//            return bearerToken.substring(7);
+//        }
+//        return null;
+//    }
+
+    private String extractTokenFromCookies(HttpServletRequest request) {
+        if(request.getCookies()==null) return null;
+
+        for(Cookie cookie : request.getCookies()) {
+            if("accessToken".equals(cookie.getName())) {
+                return cookie.getValue();
+            }
         }
         return null;
     }
