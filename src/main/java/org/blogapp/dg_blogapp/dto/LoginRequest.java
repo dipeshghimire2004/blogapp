@@ -1,5 +1,6 @@
 package org.blogapp.dg_blogapp.dto;
 
+import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -11,8 +12,9 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Builder
 public class LoginRequest {
-    @NotBlank(message = "Username cannot be blank")
-    private String username;
+    @NotBlank(message = "Email cannot be blank")
+    @Email(message = "Email must be valid")
+    private String email;
 
     @NotBlank(message = "Password cannot be blank")
     private String password;

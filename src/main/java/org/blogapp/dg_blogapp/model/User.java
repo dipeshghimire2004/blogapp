@@ -43,8 +43,7 @@ public class User implements UserDetails {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "username", nullable = false, unique = true)
-    @NotBlank(message = "Username cannot be blank")
+    @Column(name = "username", unique = true)
     private String username;
 
     @Column(name = "password", nullable = false)
@@ -69,6 +68,13 @@ public class User implements UserDetails {
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return List.of(new SimpleGrantedAuthority("ROLE_" + role.name()));
     }
+
+    @Override
+    public String getUsername() {
+        // Use email as username for Spring Security
+        return email;
+    }
+
     @Override
     public boolean isAccountNonLocked() {
         return true;

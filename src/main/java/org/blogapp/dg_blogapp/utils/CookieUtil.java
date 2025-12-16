@@ -1,12 +1,11 @@
 package org.blogapp.dg_blogapp.utils;
 
-
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 import java.util.Arrays;
 import java.util.Optional;
@@ -24,37 +23,35 @@ public class CookieUtil {
     @Value("${jwt.refresh-token-expiration}")
     private int REFRESH_TOKEN_MAX_AGE;
 
+    @Value("${app.cookie.domain}")
+    private String domainName;
+
     private Cookie createSecureCookie(String name, String value, int maxAge){
 
         Cookie cookie = new Cookie(name, value);
-        cookie.setHttpOnly(true);
-        cookie.setSecure(true);
+        cookie.setHttpOnly(true);   //make the cookie inaccessible to javascript
+        cookie.setSecure(false);   //true in prod  //Ensures cookie is only sent over HTTPS, critical for prod to avoid middle-man attacks.
         cookie.setPath("/");
         cookie.setMaxAge(maxAge);
-        cookie.setAttribute("SameSite", "Strict"); // CSRF protection
+        cookie.setAttribute("SameSite", "lax");
+        if(StringUtils.hasText(domainName)){
+            cookie.setDomain(domainName);
+        }
 
         return cookie;
     }
 
-   public void setAccessTokenCookie(HttpServletResponse response, String accessToken){
-       int maxAgeSeconds = (int) (ACCESS_TOKEN_MAX_AGE / 1000);
+    public void setAccessTokenCookie(HttpServletResponse response, String accessToken){
+        int maxAgeSeconds = (int) (ACCESS_TOKEN_MAX_AGE / 1000);
         Cookie cookie = createSecureCookie(ACCESS_TOKEN_COOKIE, accessToken, maxAgeSeconds);
         response.addCookie(cookie);
-
-        // Manual set-cookie header for better samesite support
-       response.addHeader("Set-Cookie", String.format("%s=%s; path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=%d", ACCESS_TOKEN_COOKIE, accessToken, maxAgeSeconds));
     }
 
-   public void setRefreshTokenCookie(HttpServletResponse response, String refreshToken){
-       int maxAgeSeconds = (int) (REFRESH_TOKEN_MAX_AGE / 1000);
-       Cookie cookie = createSecureCookie(REFRESH_TOKEN_COOKIE, refreshToken, maxAgeSeconds);
-       response.addCookie(cookie);
-
-       //Manual set-cookie header for better same site fupport
-       response.addHeader("Set-Cookie",
-               String.format("%s=%s; path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=%d", REFRESH_TOKEN_COOKIE, refreshToken, maxAgeSeconds));
-
-   }
+    public void setRefreshTokenCookie(HttpServletResponse response, String refreshToken){
+        int maxAgeSeconds = (int) (REFRESH_TOKEN_MAX_AGE / 1000);
+        Cookie cookie = createSecureCookie(REFRESH_TOKEN_COOKIE, refreshToken, maxAgeSeconds);
+        response.addCookie(cookie);
+    }
 
 
     public Optional<String> getCookieValue(HttpServletRequest request, String cookieName) {
@@ -82,7 +79,8 @@ public class CookieUtil {
     public void clearAuthCookie(HttpServletResponse response) {
         Cookie accessCookie = new Cookie(ACCESS_TOKEN_COOKIE, null);
         accessCookie.setPath("/");
-        accessCookie.setHttpOnly(true);
+        accessCookie.setHttpOnly(false);        //true in prod
+        accessCookie.setSecure(false);          //true in prod
         accessCookie.setMaxAge(0);
         response.addCookie(accessCookie);
 

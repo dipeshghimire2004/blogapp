@@ -49,16 +49,16 @@ public class AuthenticationService {
      */
     @Transactional
     public AuthResult register(RegisterRequest request, Role role) {
-        log.info("Registering new user: {}", request.getUsername());
-        if (userRepository.findByUsername(request.getUsername()).isPresent()) {
-            log.error("Username {} already exists", request.getUsername());
-            throw new UserAlreadyExistsException("Username already exists: " + request.getUsername());
+        log.info("Registering new user: {}", request.getEmail());
+        if (userRepository.findByEmail(request.getEmail()).isPresent()) {
+            log.error("Email {} already exists", request.getEmail());
+            throw new UserAlreadyExistsException("Email already exists: " + request.getEmail());
         }
         // Create and save user
         String encodedPassword = passwordEncoder.encode(request.getPassword());
         User user = userMapper.toEntity(request, encodedPassword, role);
         User savedUser = userRepository.save(user);
-        log.info("User {} registered successfully", request.getUsername());
+        log.info("User {} registered successfully", request.getEmail());
 
         //generate token
         String accessToken = jwtService.generateAccessToken(savedUser);
@@ -79,16 +79,15 @@ public class AuthenticationService {
 
 
     public JwtResponse login(LoginRequest loginRequest) {
-//        User user = userRepository.findByUsername(loginRequest.getUsername()).orElse(null);
         log.info("Login request: {}", loginRequest);
-        // Find user by username
-        User user = userRepository.findByUsername(loginRequest.getUsername())
+        // Find user by email
+        User user = userRepository.findByEmail(loginRequest.getEmail())
                 .orElseThrow(() -> new RuntimeException("User not found"));
         String encodedPassword = passwordEncoder.encode(loginRequest.getPassword());
         log.info("Login password: {}", encodedPassword);
         if(!passwordEncoder.matches(loginRequest.getPassword(), user.getPassword())) {
-            log.error("Invalid username or password");
-            throw new RuntimeException("Invalid username or password");
+            log.error("Invalid email or password");
+            throw new RuntimeException("Invalid email or password");
         }
         return jwtService.getJwtResponse(user);
     }
