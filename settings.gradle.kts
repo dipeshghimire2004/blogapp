@@ -1,1 +1,1 @@
-rootProject.name = "BlogApp"
+rootProject.name = "DG_BlogApp"

@@ -1,29 +1,58 @@
-version: "3.8"
-
 services:
-  postgres:
-    image: postgres
-    container_name: blogApp
+  blogapp:
+    image: blogapp-backend  # Uses an existing Docker image named "blogapp-backend".
+    build:
+      context: .  # The Dockerfile is located in the current directory.
+      dockerfile: Dockerfile  # Specifies the Dockerfile for building the image.
+    ports:
+      - "8085:8085"  # Maps port 8084 of the container to port 8084 on the host.
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: bolgappdb
-    ports:
-      - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-  app:
-    build: .
-    container_name: BlogApp
-    ports:
-      - "8081:8081"
+      - TZ=Asia/Kathmandu
+    env_file:
+      - .env
+    networks:
+      - dev_network
     depends_on:
-      - postgres
-    environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/bolgappdb
-      SPRING_DATABASE_USERNAME: postgres
-      SPRING_DATASOURCE_PASSWORD: postgres
-      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      - redis-blogapp
+      - localstack
+      - postgres-dev
 
-volumes:
-  postgres_data:
+  postgres-dev:
+    image: postgres:15.10  # Uses PostgreSQL version 15.10 as the base image.
+    container_name: postgres-dev  # Assigns a specific name to the container for easy reference.
+    environment:
+      POSTGRES_USER: postgres  # Sets the database username.
+      POSTGRES_PASSWORD: postgres  # Sets the database password.
+      POSTGRES_DB: postgres  # Creates a default database named "postgres".
+    ports:
+      - "5434:5432"  # Maps port 5434 on the host machine to the default PostgreSQL port (5432) inside the container.
+    networks:
+      - dev_network
+
+  redis-blogapp:
+    image: redis:7.0-alpine
+    container_name: redis-blogapp
+    ports:
+      - "6379:6379"
+    networks:
+      - dev_network
+
+  localstack:
+    image: localstack/localstack:latest  # Uses the latest version of LocalStack.
+    container_name: localstack  # Assigns a fixed name to the container.
+    ports:
+      - "4566:4566"
+    #    ports:
+    #      - "4566:4566" # Maps the LocalStack API gateway port.
+    #      - "4572:4572" # Maps the S3 service port.
+    environment:
+      - SERVICES=s3  # Enables only the S3 service in LocalStack.
+      - DEFAULT_REGION=us-west-2  # Sets the AWS region for the local environment.
+    volumes:
+      - ./localstack/s3:/docker-entrypoint-initaws.d  # Mounts a local directory to persist data across container restarts.
+    networks:
+      - dev_network
+
+networks:
+  dev_network:
+    driver: bridge
