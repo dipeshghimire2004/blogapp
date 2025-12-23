@@ -49,8 +49,10 @@ public class JwtService {
     // Generate Access Token
     public String generateAccessToken(UserDetails user) {
         Instant now = Instant.now();
+        User userEntity = (User) user;
         return Jwts.builder()
                 .subject(user.getUsername())
+                .claim("userId", userEntity.getId())
                 .claim("roles", user.getAuthorities())
                 .issuedAt(Date.from(now))
                 .expiration(Date.from(now.plusMillis(accessTokenExpiration)))
@@ -97,6 +99,11 @@ public class JwtService {
     // Extract username from token
     public String extractUsername(String token) {
        return extractClaim(token, Claims::getSubject);
+    }
+
+    // Extract user ID from token
+    public Long extractUserId(String token) {
+        return extractClaim(token, claims -> claims.get("userId", Long.class));
     }
 
     //extract expiration date from token
@@ -163,7 +170,13 @@ public class JwtService {
     }
 
     public String getUserIdFromJwtToken() {
-        return SecurityContextHolder.getContext().getAuthentication().getPrincipal().toString();
+        Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        
+        if (principal instanceof Long) {
+            return String.valueOf(principal);
+        }
+        
+        throw new RuntimeException("Unable to extract user ID from token");
     }
 
     public String getRandomUUID(){

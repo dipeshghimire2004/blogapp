@@ -60,7 +60,7 @@ public class BlogPostController {
     })
     @PutMapping("/{id}")
     public ResponseEntity<BlogPostResponseDTO> updatePost(@PathVariable UUID id,
-                                                          @Valid @RequestBody BlogPostRequestDTO postRequestDTO,
+                                                          @Valid @ModelAttribute BlogPostRequestDTO postRequestDTO,
                                                           @RequestPart(value="image", required = false) MultipartFile image) {
         log.info("Received request to update a blog post with id {}",id);
         BlogPostResponseDTO updatePost= blogPostService.updatePost(id, postRequestDTO,image);

@@ -1,5 +1,6 @@
 package org.blogapp.dg_blogapp.service;
 
+import com.amazonaws.services.connect.model.UserNotFoundException;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -51,6 +52,7 @@ public class BlogPostService {
     private final UserRepository userRepository;
 
     private final FileNameGenerator fileNameGenerator;
+    private final JwtService jwtService;
 
     /**
      * Creates a new blog post
@@ -197,15 +199,26 @@ public class BlogPostService {
 
 
     private User getCurrentUser() {
-        log.info("Getting current user");
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if(authentication == null || !(authentication.isAuthenticated() || authentication instanceof AnonymousAuthenticationToken)) {
-            log.info("User not logged in");
-            throw new BlogPostNotFoundException("User not authenticated");
+        Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        
+        if (principal instanceof Long) {
+            Long userId = (Long) principal;
+            return userRepository.findById(userId)
+                    .orElseThrow(() -> new UserNotFoundException("User not found"));
         }
-        String username = authentication.getName();
-        return userRepository.findByUsername(username).orElseThrow(() -> new BlogPostNotFoundException("User not found"));
+        
+        throw new UserNotFoundException("Unable to determine current user");
     }
+//    private User getCurrentUser() {
+//        log.info("Getting current user");
+//        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+//        if(authentication == null || !(authentication.isAuthenticated() || authentication instanceof AnonymousAuthenticationToken)) {
+//            log.info("User not logged in");
+//            throw new BlogPostNotFoundException("User not authenticated");
+//        }
+//        String username = authentication.getName();
+//        return userRepository.findByUsername(username).orElseThrow(() -> new BlogPostNotFoundException("User not found"));
+//    }
 
     private String uploadImageFile(Long userId, MultipartFile image) {
         String path = String.format("users/%s/images/", userId);
