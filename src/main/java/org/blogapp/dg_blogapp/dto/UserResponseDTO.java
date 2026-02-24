@@ -6,16 +6,16 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.blogapp.dg_blogapp.model.Role;
 
+import java.util.UUID;
 
-/**
- * Data Transfer Object for returning user details.
- */
+
+
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 public class UserResponseDTO {
-    private Long id;
+    private UUID id;
     private String username;
     private String email;
     private Role role;

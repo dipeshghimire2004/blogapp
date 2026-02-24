@@ -1,4 +1,4 @@
-package org.blogapp.dg_blogapp.model;
+package org.blogapp.dg_blogapp.passkey.model;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -11,29 +11,36 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Data;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.blogapp.dg_blogapp.model.User;
 
-import java.time.Instant;
+import java.util.UUID;
 
 @Entity
-@Table(name = "refresh_token")
-@Getter
 @Setter
-@NoArgsConstructor
+@Getter
 @AllArgsConstructor
+@NoArgsConstructor
 @Builder
-public class RefreshToken extends BaseEntity {
+@Table
+public class PasskeyCredential{
 
-    @Column(nullable = false, unique = true)
-    private String token;
+    @Id
+    @GeneratedValue(strategy = GenerationType.AUTO)
+    private UUID id;
 
-    @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "user_id", nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(nullable = false, name="user_id")
     private User user;
 
-    @Column(nullable = false)
-    private Instant expiryDate;
+    private byte[] credentialId;
+
+    private byte[] publicKey;
+
+    private byte[] userHandle;
+
+
+
 }

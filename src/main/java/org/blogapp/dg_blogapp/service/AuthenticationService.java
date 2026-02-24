@@ -3,23 +3,23 @@ package org.blogapp.dg_blogapp.service;
 import com.amazonaws.services.elasticache.model.UserAlreadyExistsException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.blogapp.dg_blogapp.controller.AuthResult;
+import org.blogapp.dg_blogapp.dto.AuthResult;
 import org.blogapp.dg_blogapp.dto.JwtResponse;
 import org.blogapp.dg_blogapp.dto.LoginRequest;
 import org.blogapp.dg_blogapp.dto.LoginResponse;
 import org.blogapp.dg_blogapp.dto.RegisterRequest;
 import org.blogapp.dg_blogapp.dto.TokenRefreshResult;
-import org.blogapp.dg_blogapp.dto.UserResponseDTO;
 import org.blogapp.dg_blogapp.mapper.UserMapper;
 import org.blogapp.dg_blogapp.model.Role;
 import org.blogapp.dg_blogapp.model.User;
 import org.blogapp.dg_blogapp.repository.UserRepository;
+//import org.blogapp.dg_blogapp.repository.reactive.ReactiveUserRepository;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 
 /**
@@ -32,21 +32,9 @@ public class AuthenticationService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
-    private final AuthenticationManager authenticationManager;
     private final UserMapper userMapper;
+//    private final ReactiveUserRepository reactiveUserRepository;
 
-//    public AuthenticationService(UserRepository userRepository, PasswordEncoder passwordEncoder,
-//                                 JwtService jwtService, AuthenticationManager authenticationManager, UserMapper userMapper) {
-//        this.userRepository = userRepository;
-//        this.passwordEncoder = passwordEncoder;
-//        this.jwtService = jwtService;
-//        this.authenticationManager = authenticationManager;
-//        this.userMapper = userMapper;
-//    }
-
-    /**
-     * Registers a new user and returns a JWT token.
-     */
     @Transactional
     public AuthResult register(RegisterRequest request, Role role) {
         log.info("Registering new user: {}", request.getEmail());
@@ -74,6 +62,15 @@ public class AuthenticationService {
                 .build();
     }
 
+
+//    public Mono<User> getUserById(long userId)
+//    {
+//        return reactiveUserRepository.findById(userId);
+//    }
+//
+//    public Flux<User> getAllUsers(){
+//        return reactiveUserRepository.findAll();
+//    }
 
 
 

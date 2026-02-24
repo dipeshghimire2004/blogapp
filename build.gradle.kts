@@ -19,12 +19,24 @@ repositories {
 
 dependencies {
 
-    implementation("org.springframework.boot:spring-boot-starter-data-jpa")
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("io.github.cdimascio:dotenv-java:3.2.0")
+    implementation("org.springframework.boot:spring-boot-starter-webflux")
+
+    //JPA for database
+    implementation("org.springframework.boot:spring-boot-starter-data-jpa")
+    //r2dbc
+//    implementation("org.springframework.boot:spring-boot-starter-data-r2dbc")
+//    runtimeOnly("io.r2dbc:r2dbc-postgresql:0.8.21.RELEASE")
+
+    //security/ passkey
+    implementation("org.springframework.boot:spring-boot-starter-security:3.5.0")
+    implementation("com.yubico:webauthn-server-core:2.5.0")
     testImplementation("org.springframework.security:spring-security-test")
 
     implementation("org.springframework.boot:spring-boot-devtools:3.4.3")
+
+
 
     // AWS
     implementation("software.amazon.awssdk:s3:2.31.6")

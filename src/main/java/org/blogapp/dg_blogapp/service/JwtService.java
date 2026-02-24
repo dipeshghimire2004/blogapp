@@ -102,8 +102,16 @@ public class JwtService {
     }
 
     // Extract user ID from token
-    public Long extractUserId(String token) {
-        return extractClaim(token, claims -> claims.get("userId", Long.class));
+    public UUID extractUserId(String token) {
+        Object userIdClaim = extractClaim(token, claims -> claims.get("userId"));
+        if (userIdClaim == null) {
+            return null;
+        }
+        // Handle both String and UUID representations
+        if (userIdClaim instanceof String) {
+            return UUID.fromString((String) userIdClaim);
+        }
+        return (UUID) userIdClaim;
     }
 
     //extract expiration date from token
@@ -169,15 +177,36 @@ public class JwtService {
         return Keys.hmacShaKeyFor(keyBytes);
     }
 
-    public String getUserIdFromJwtToken() {
+    public UUID getCurrentUserIdFromJwtToken()
+    {
         Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        
-        if (principal instanceof Long) {
-            return String.valueOf(principal);
+        if(principal instanceof UUID){
+            return (UUID) principal;
         }
-        
-        throw new RuntimeException("Unable to extract user ID from token");
+       return  UUID.fromString(principal.toString());
     }
+
+//    public String getUserIdFromJwtToken() {
+//
+//        Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+//
+//        // Handle UUID (new tokens)
+//        if (principal instanceof UUID) {
+//            return principal.toString();
+//        }
+//
+//        // Handle String representation of UUID
+//        if (principal instanceof String) {
+//            try {
+//                UUID.fromString((String) principal);
+//                return (String) principal;
+//            } catch (IllegalArgumentException e) {
+//                // Not a UUID string, might be username from old token
+//            }
+//        }
+//
+//        throw new RuntimeException("Unable to extract user ID from token");
+//    }
 
     public String getRandomUUID(){
         return UUID.randomUUID().toString();

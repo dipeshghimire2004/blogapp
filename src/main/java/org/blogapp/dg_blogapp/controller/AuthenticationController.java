@@ -7,21 +7,21 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.blogapp.dg_blogapp.dto.AuthResult;
 import org.blogapp.dg_blogapp.dto.JwtResponse;
-import org.blogapp.dg_blogapp.dto.LoginResponse;
 import org.blogapp.dg_blogapp.dto.LoginRequest;
 import org.blogapp.dg_blogapp.dto.RegisterRequest;
 import org.blogapp.dg_blogapp.dto.TokenRefreshResult;
-import org.blogapp.dg_blogapp.dto.UserResponseDTO;
 import org.blogapp.dg_blogapp.model.Role;
 import org.blogapp.dg_blogapp.service.AuthenticationService;
 import org.blogapp.dg_blogapp.service.JwtService;
 import org.blogapp.dg_blogapp.utils.CookieUtil;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import jakarta.validation.Valid;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -38,9 +38,19 @@ public class AuthenticationController
 {
 
     private final AuthenticationService authService;
-    private JwtService jwtService;
     private final CookieUtil cookieUtil;
 
+
+//    @GetMapping("/{id}")
+//    public Mono<ReactiveUser> getUser(@PathVariable Long id){
+//        return authService.getUserById(id);
+//    }
+//
+//    @GetMapping()
+//    public Flux<ReactiveUser> allUsers()
+//    {
+//        return authService.getAllUsers();
+//    }
 
     @Operation(summary = "Register a new user", description = "Creates a new user with USER role")
     @ApiResponses(value = {
@@ -48,15 +58,11 @@ public class AuthenticationController
             @ApiResponse(responseCode = "409", description = "Username already exists")
     })
     @PostMapping("/register")
-    public ResponseEntity<AuthResult> register(@Valid @RequestBody RegisterRequest request, HttpServletResponse response)
-    {
+    public ResponseEntity<AuthResult> register(@Valid @RequestBody RegisterRequest request, HttpServletResponse response) {
         AuthResult result = authService.register(request, Role.USER);
 
-        // Handle HTTP concern: Set cookies
         cookieUtil.setAccessTokenCookie(response, result.getAccessToken());
         cookieUtil.setRefreshTokenCookie(response, result.getRefreshToken());
-
-
 
         return ResponseEntity.status(HttpStatus.CREATED).body(result);
     }
@@ -64,14 +70,10 @@ public class AuthenticationController
     @PostMapping("/login")
     public ResponseEntity<Map<String, Object>> login(@Valid @RequestBody LoginRequest request, HttpServletResponse response)
     {
-        // Call service for business logic
         JwtResponse result = authService.login(request);
-
-        // Handle HTTP concern: Set cookies
-        cookieUtil.setAccessTokenCookie(response, result.getAccessToken());
+   cookieUtil.setAccessTokenCookie(response, result.getAccessToken());
         cookieUtil.setRefreshTokenCookie(response, result.getRefreshToken());
 
-        // Handle HTTP concern: Build response
         Map<String, Object> responseBody = new HashMap<>();
         responseBody.put("accessToken", result.getAccessToken());
         responseBody.put("refreshToken", result.getRefreshToken());

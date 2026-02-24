@@ -18,12 +18,12 @@ services:
       - postgres-dev
 
   postgres-dev:
-    image: postgres:15.10  # Uses PostgreSQL version 15.10 as the base image.
-    container_name: postgres-dev  # Assigns a specific name to the container for easy reference.
+    image: postgres:15.10
+    container_name: postgres-dev
     environment:
-      POSTGRES_USER: postgres  # Sets the database username.
-      POSTGRES_PASSWORD: postgres  # Sets the database password.
-      POSTGRES_DB: postgres  # Creates a default database named "postgres".
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
     ports:
       - "5434:5432"  # Maps port 5434 on the host machine to the default PostgreSQL port (5432) inside the container.
     networks:

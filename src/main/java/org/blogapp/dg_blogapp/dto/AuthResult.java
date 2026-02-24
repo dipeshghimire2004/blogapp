@@ -1,9 +1,8 @@
-package org.blogapp.dg_blogapp.controller;
+package org.blogapp.dg_blogapp.dto;
 
 import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
-import org.blogapp.dg_blogapp.dto.UserResponseDTO;
 
 @Getter
 @Setter

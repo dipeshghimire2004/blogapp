@@ -33,10 +33,6 @@ public interface BlogPostMapper {
      * @return BlogPost entity
      */
     @Mapping(target = "user", ignore = true)
-    @Mapping(target = "id", ignore = true)
-    @Mapping(target = "createdAt", ignore = true)
-    @Mapping(target = "updatedAt", ignore = true)
-
     BlogPost toEntity(BlogPostRequestDTO blogPostRequestDTO);
 }
 
