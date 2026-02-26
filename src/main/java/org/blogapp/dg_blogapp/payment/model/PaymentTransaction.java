@@ -1,9 +1,12 @@
 package org.blogapp.dg_blogapp.payment.model;
 
+import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.JoinColumn;
+import jakarta.persistence.Lob;
 import jakarta.persistence.ManyToOne;
 import jakarta.validation.constraints.Digits;
 import lombok.AllArgsConstructor;
@@ -15,6 +18,9 @@ import org.blogapp.dg_blogapp.model.BaseEntity;
 import org.blogapp.dg_blogapp.model.User;
 import org.blogapp.dg_blogapp.payment.enums.DonationStatus;
 import org.blogapp.dg_blogapp.payment.enums.GatewayType;
+import org.blogapp.dg_blogapp.payment.enums.PaymentStatus;
+import org.blogapp.dg_blogapp.payment.enums.TransactionType;
+
 import java.math.BigDecimal;
 
 @Entity
@@ -39,12 +45,27 @@ public class PaymentTransaction extends BaseEntity {
     @Builder.Default
     private String currency="NPR";
 
+    @Builder.Default
     @Enumerated(EnumType.STRING)
-    private GatewayType gateway;
+    private GatewayType gateway=GatewayType.KHALTI;
 
-    private String providerReference;   //payment Id
+    @Enumerated(EnumType.STRING)
+    private TransactionType transactionType;
+
+    private String pidx;   //payment Id
+
+//    @Type(type = "jsonb")               // <-- Hibernate JSONB type
+//    @Column(columnDefinition = "jsonb")
+//    private Map<String, Object> rawResponse;
+
+    @Lob
+    @Column(columnDefinition = "TEXT")   // store raw JSON safely
+    private String rawResponse;
+
 
     @Enumerated(EnumType.STRING)
     private DonationStatus donationStatus;
 
+    @Enumerated(EnumType.STRING)
+    private PaymentStatus paymentStatus;
 }

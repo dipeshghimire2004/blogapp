@@ -37,6 +37,7 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-devtools:3.4.3")
 
 
+    implementation("com.vladmihalcea:hibernate-types-52:2.21.1")
 
     // AWS
     implementation("software.amazon.awssdk:s3:2.31.6")
