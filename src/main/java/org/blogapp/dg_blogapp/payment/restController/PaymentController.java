@@ -1,22 +1,23 @@
 package org.blogapp.dg_blogapp.payment.restController;
 
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
-import org.blogapp.dg_blogapp.payment.dto.DonateDto;
 import org.blogapp.dg_blogapp.payment.dto.DonateRequestDto;
-import org.blogapp.dg_blogapp.payment.dto.FakePaymentDto;
+import org.blogapp.dg_blogapp.payment.dto.InitiatePaymentRequest;
+import org.blogapp.dg_blogapp.payment.dto.InitiatePaymentResponse;
+import org.blogapp.dg_blogapp.payment.dto.PaymentVerifyResponse;
+import org.blogapp.dg_blogapp.payment.dto.PaymentVerifyRequest;
 import org.blogapp.dg_blogapp.payment.service.PaymentService;
-import org.springframework.http.MediaType;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
 
-import java.time.Duration;
-import java.util.List;
+import java.io.IOException;
 import java.util.Map;
 import java.util.UUID;
 
@@ -27,31 +28,35 @@ public class PaymentController {
 
     private final PaymentService paymentService;
 
-
-    @PostMapping()
-    public ResponseEntity<Map<String,UUID>> donateInitiate(@RequestBody DonateRequestDto request) {
-            UUID donationId= paymentService.donateInitiate(request);
-        return ResponseEntity.ok(Map.of("donationID ", donationId));
+    @PostMapping("/initiate")
+    public ResponseEntity<Map<String, UUID>> donateInitiate(@RequestBody DonateRequestDto request) {
+        UUID donationId = paymentService.donateInitiate(request);
+        return ResponseEntity.ok(Map.of("donationId", donationId));
     }
 
-    @PostMapping("/fake")
-    public ResponseEntity<Void> fakePayment(@RequestBody FakePaymentDto request){
-        paymentService.fakePayment(request);
-        return ResponseEntity.ok().build();
+    @PostMapping("/khalti/initiate")
+    public ResponseEntity<InitiatePaymentResponse> initiatePayment(@RequestBody InitiatePaymentRequest request) {
+        InitiatePaymentResponse response = paymentService.initiatePayment(request);
+        return ResponseEntity.ok(response);
     }
 
-    //Mono eg.
-    @GetMapping("/mono")
-    public Mono<String> mono()
-    {
-        return Mono.just("mono babu");
+    @GetMapping("/callback")
+    public ResponseEntity<Void> handleKhaltiCallback(@RequestParam("pidx") String pidx, HttpServletResponse response) throws IOException {
+        PaymentVerifyRequest request = new PaymentVerifyRequest();
+        request.setPidx(pidx);
+        PaymentVerifyResponse verifyResponse = paymentService.verifyPayment(request);
+        
+        // Redirect to frontend with status
+        String frontendUrl = "http://localhost:3000/payment/callback";
+        String redirectUrl = frontendUrl + "?pidx=" + pidx + "&status=" + verifyResponse.getStatus();
+        
+        response.sendRedirect(redirectUrl);
+        return ResponseEntity.status(HttpStatus.FOUND).build();
     }
 
-    //Flux (simulate streaming every seconds
-    @GetMapping(value = "/flux", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public Flux<String> flux()
-    {
-        List<String> items = List.of("one", "two", "three", "four", "five");
-        return Flux.fromIterable(items).delayElements(Duration.ofSeconds(1)).map(seq -> "\nStreaming data: " + seq).take(2);
+    @PostMapping("/khalti/verify")
+    public ResponseEntity<PaymentVerifyResponse> verifyPayment(@RequestBody PaymentVerifyRequest request) {
+        PaymentVerifyResponse response=  paymentService.verifyPayment(request);
+        return ResponseEntity.ok(response);
     }
 }

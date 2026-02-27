@@ -18,6 +18,5 @@ import java.util.UUID;
 public class InitiatePaymentRequest
 {
     private UUID donationId;
-    private String return_url;
     private String note;
 }

@@ -1,0 +1,291 @@
+{
+	"info": {
+		"_postman_id": "payment-flow-collection",
+		"name": "Payment Flow - Khalti Integration",
+		"description": "Complete payment flow with Khalti integration",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "1. Register Donor",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"const response = pm.response.json();",
+							"if (response.data && response.data.id) {",
+							"    pm.environment.set('donor_id', response.data.id);",
+							"}"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"username\": \"donor_user\",\n  \"email\": \"donor@example.com\",\n  \"password\": \"password123\"\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/auth/register",
+					"host": ["{{base_url}}"],
+					"path": ["auth", "register"]
+				}
+			}
+		},
+		{
+			"name": "2. Register Receiver",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"const response = pm.response.json();",
+							"if (response.data && response.data.id) {",
+							"    pm.environment.set('receiver_id', response.data.id);",
+							"}"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"username\": \"receiver_user\",\n  \"email\": \"receiver@example.com\",\n  \"password\": \"password123\"\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/auth/register",
+					"host": ["{{base_url}}"],
+					"path": ["auth", "register"]
+				}
+			}
+		},
+		{
+			"name": "3. Login as Donor",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"const response = pm.response.json();",
+							"if (response.accessToken) {",
+							"    pm.environment.set('access_token', response.accessToken);",
+							"}",
+							"",
+							"// Also check cookies",
+							"const cookie = pm.cookies.get('accessToken');",
+							"if (cookie) {",
+							"    pm.environment.set('access_token', cookie);",
+							"}"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"email\": \"donor@example.com\",\n  \"password\": \"password123\"\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/auth/login",
+					"host": ["{{base_url}}"],
+					"path": ["auth", "login"]
+				}
+			}
+		},
+		{
+			"name": "4. Create Donation",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"const response = pm.response.json();",
+							"if (response.donationId) {",
+							"    pm.environment.set('donation_id', response.donationId);",
+							"}"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					},
+					{
+						"key": "Cookie",
+						"value": "accessToken={{access_token}}"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"amount\": 100,\n  \"receiverId\": \"{{receiver_id}}\",\n  \"postId\": null\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/payment/initiate",
+					"host": ["{{base_url}}"],
+					"path": ["payment", "initiate"]
+				},
+				"description": "Creates a donation record with status INITIATED"
+			}
+		},
+		{
+			"name": "5. Initiate Khalti Payment",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"const response = pm.response.json();",
+							"if (response.pidx) {",
+							"    pm.environment.set('pidx', response.pidx);",
+							"}",
+							"if (response.paymentUrl) {",
+							"    pm.environment.set('payment_url', response.paymentUrl);",
+							"    console.log('Payment URL:', response.paymentUrl);",
+							"}"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					},
+					{
+						"key": "Cookie",
+						"value": "accessToken={{access_token}}"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"donationId\": \"{{donation_id}}\"\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/payment/khalti/initiate",
+					"host": ["{{base_url}}"],
+					"path": ["payment", "khalti", "initiate"]
+				},
+				"description": "Calls Khalti API to initiate payment. Returns pidx and payment_url.\n\nAfter this step:\n1. Copy the payment_url from response\n2. Open it in browser\n3. Complete payment with test credentials:\n   - Mobile: 9800000000 to 9800000010\n   - OTP: 987654\n   - PIN: any 4 digits"
+			}
+		},
+		{
+			"name": "6. Verify Payment (Manual)",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					},
+					{
+						"key": "Cookie",
+						"value": "accessToken={{access_token}}"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"pidx\": \"{{pidx}}\"\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/payment/khalti/verify",
+					"host": ["{{base_url}}"],
+					"path": ["payment", "khalti", "verify"]
+				},
+				"description": "Manually verify payment status with Khalti.\n\nUse this if:\n- Callback didn't work\n- You want to check payment status\n- Testing verification logic"
+			}
+		},
+		{
+			"name": "7. Callback (Automatic)",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/payment/callback?pidx={{pidx}}&status=Completed",
+					"host": ["{{base_url}}"],
+					"path": ["payment", "callback"],
+					"query": [
+						{
+							"key": "pidx",
+							"value": "{{pidx}}"
+						},
+						{
+							"key": "status",
+							"value": "Completed"
+						}
+					]
+				},
+				"description": "This endpoint is called automatically by Khalti after payment.\n\nYou can also test it manually by providing the pidx."
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:8085",
+			"type": "string"
+		},
+		{
+			"key": "access_token",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "donor_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "receiver_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "donation_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "pidx",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "payment_url",
+			"value": "",
+			"type": "string"
+		}
+	]
+}

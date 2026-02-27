@@ -1,5 +1,6 @@
 package org.blogapp.dg_blogapp.config;
 
+
 import org.blogapp.dg_blogapp.repository.UserRepository;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

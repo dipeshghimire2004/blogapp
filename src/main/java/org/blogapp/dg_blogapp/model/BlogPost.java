@@ -52,7 +52,6 @@ public class BlogPost extends BaseEntity
     @Lob        //large text
     @Basic(fetch = FetchType.EAGER)
     @Column(name = "content")
-//    @NotBlank(message="content cannot be blank")
     private String content;
 
 

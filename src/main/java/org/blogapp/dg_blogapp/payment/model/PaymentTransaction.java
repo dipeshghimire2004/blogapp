@@ -1,6 +1,5 @@
 package org.blogapp.dg_blogapp.payment.model;
 
-import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;

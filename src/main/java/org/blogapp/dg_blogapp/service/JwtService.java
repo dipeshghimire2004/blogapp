@@ -180,6 +180,12 @@ public class JwtService {
     public UUID getCurrentUserIdFromJwtToken()
     {
         Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        
+        // Handle anonymous user
+        if (principal instanceof String && "anonymousUser".equals(principal)) {
+            throw new RuntimeException("User not authenticated");
+        }
+        
         if(principal instanceof UUID){
             return (UUID) principal;
         }

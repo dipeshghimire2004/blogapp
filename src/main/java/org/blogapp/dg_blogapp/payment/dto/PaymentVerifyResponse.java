@@ -18,9 +18,9 @@ import java.math.BigDecimal;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class PaymentVerifyResponse {
 
-    private String orderId;
+//    private String orderId;
     private PaymentStatus status;
-    private BigDecimal amount;
+//    private BigDecimal amount;
     private String message;
 
 }
