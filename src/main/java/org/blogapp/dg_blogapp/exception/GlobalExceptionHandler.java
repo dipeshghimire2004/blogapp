@@ -41,10 +41,20 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(UnauthorizedException.class)
     public ResponseEntity<GlobalApiResponse<ErrorResponse>> handleUnauthorizedException(UnauthorizedException ex) {
         ErrorResponse errorResponse = new ErrorResponse();
-        errorResponse.setMessage(ex.getMessage());
+        errorResponse.setMessage("Unauthorized access denied");
         errorResponse.setErrorCode(ErrorCode.valueOf(ex.getErrorCode().getCode()));
         log.error("Error {}: {}", ex.getErrorCode(), ex.getMessage(),ex);
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(GlobalApiResponse.error(errorResponse, HttpStatus.UNAUTHORIZED,ex.getMessage()));
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(GlobalApiResponse.error(errorResponse, HttpStatus.UNAUTHORIZED,"Unauthorized access denied"));
+    }
+
+    @ExceptionHandler(EncryptionException.class)
+    public ResponseEntity<GlobalApiResponse<ErrorResponse>> handleEncryptionException(EncryptionException ex) {
+        ErrorResponse errorResponse = new ErrorResponse();
+        errorResponse.setMessage("Data security error occurred");
+        errorResponse.setErrorCode(ErrorCode.ENCRYPTION_ERROR);
+        log.error("Encryption error: {}", ex.getMessage(), ex);
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(GlobalApiResponse.error(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR, "Data security error occurred"));
     }
 
     @ExceptionHandler(Exception.class)

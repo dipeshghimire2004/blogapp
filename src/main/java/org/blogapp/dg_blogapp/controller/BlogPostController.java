@@ -30,23 +30,8 @@ public class BlogPostController {
 
     private final BlogPostService blogPostService;
 
-    /**
-     * Creates a new blog post with an optional image.
-     *
-     * @param requestDTO the blog post data
-     * @param image      the optional image file
-     * @return the created blog post
-     */
-    @Operation(summary = "Create a new blog post", description = "Creates a blog post with optional image upload")
-    @ApiResponses({
-            @ApiResponse(responseCode = "201", description = "Post created"),
-            @ApiResponse(responseCode = "400", description = "Invalid input"),
-            @ApiResponse(responseCode = "401", description = "Unauthorized")
-    })
-    @PostMapping("/create")
-    public ResponseEntity<BlogPostResponseDTO> createPost(
-            @Valid @ModelAttribute BlogPostRequestDTO requestDTO,
-            @RequestPart(value = "image", required = false) MultipartFile image) {
+
+    public ResponseEntity<BlogPostResponseDTO> createPost(@Valid @ModelAttribute BlogPostRequestDTO requestDTO, @RequestPart(value = "image", required = false) MultipartFile image) {
         log.info("Received request to create post with title: {}", requestDTO.getTitle());
         BlogPostResponseDTO responseDTO = blogPostService.createPost(image,requestDTO);
         return ResponseEntity.status(HttpStatus.CREATED).body(responseDTO);
@@ -59,37 +44,27 @@ public class BlogPostController {
             @ApiResponse(responseCode = "404", description = "Post not found")
     })
     @PutMapping("/{id}")
-    public ResponseEntity<BlogPostResponseDTO> updatePost(@PathVariable UUID id,
-                                                          @Valid @ModelAttribute BlogPostRequestDTO postRequestDTO,
-                                                          @RequestPart(value="image", required = false) MultipartFile image) {
+    public ResponseEntity<BlogPostResponseDTO> updatePost(@PathVariable UUID id, @Valid @ModelAttribute BlogPostRequestDTO postRequestDTO, @RequestPart(value="image", required = false) MultipartFile image) {
         log.info("Received request to update a blog post with id {}",id);
         BlogPostResponseDTO updatePost= blogPostService.updatePost(id, postRequestDTO,image);
         return ResponseEntity.ok(updatePost);
     }
 
     @GetMapping("/pageform")
-    public ResponseEntity<PageResponse<BlogPostResponseDTO>> getPosts(@RequestParam(defaultValue="0") int pageNo, @RequestParam(defaultValue="10") int pageSize,
-                                                                      @RequestParam(defaultValue = "createdAt") String sortBy,
-                                                                      @RequestParam(defaultValue = "aesc") String sortOrder) {
+    public ResponseEntity<PageResponse<BlogPostResponseDTO>> getPosts(@RequestParam(defaultValue="0") int pageNo, @RequestParam(defaultValue="10") int pageSize, @RequestParam(defaultValue = "createdAt") String sortBy, @RequestParam(defaultValue = "aesc") String sortOrder) {
         log.info("Fetching 10 posts");
         PageResponse<BlogPostResponseDTO> posts = blogPostService.getPosts(pageNo, pageSize, sortBy, sortOrder);
         return ResponseEntity.status(HttpStatus.OK).body(posts);
     }
 
     @GetMapping("/title/{title}")
-    public ResponseEntity<PageResponse<BlogPostResponseDTO>> getPost(@PathVariable String title,
-                                                       @RequestParam(defaultValue = "0") int page,
-                                                       @RequestParam(defaultValue = "10") int size) {
+    public ResponseEntity<PageResponse<BlogPostResponseDTO>> getPost(@PathVariable String title, @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "10") int size) {
         log.info("Fetching  posts by title name {}", title);
         PageResponse<BlogPostResponseDTO> posts= blogPostService.getPostsByTitle(title, page, size);
         return ResponseEntity.status(HttpStatus.OK).body(posts);
     }
 
-    /**
-     * Retrieves all blog posts.
-     *
-     * @return a list of blog posts
-     */
+
     @Operation(summary = "Get all blog posts", description = "Retrieves a list of all non-deleted blog posts")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Successfully retrieved list"),

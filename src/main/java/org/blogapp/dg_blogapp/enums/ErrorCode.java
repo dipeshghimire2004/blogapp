@@ -13,7 +13,8 @@ public enum ErrorCode {
     BAD_REQUEST(400, "BAD_REQUEST", "Invalid request parameters."),
     INTERNAL_SERVER_ERROR(500, "INTERNAL_SERVER_ERROR", "Something went wrong."),
     OAUTH_ACCOUNT_LINKED_EXCEPTION(401, "OAUTH_ACCOUNT_LINKED_EXCEPTION", "This account is already linked to oauth provider so this service is not available."),
-    UNAUTHORIZED(403, "UNAUTHORIZED", "Access denied.");
+    UNAUTHORIZED(403, "UNAUTHORIZED", "Access denied."),
+    ENCRYPTION_ERROR(500, "ENCRYPTION_ERROR", "Failed to encrypt/decrypt sensitive data.");
 
     private final int httpStatus;
     private final String code;
