@@ -2,22 +2,29 @@ package org.blogapp.dg_blogapp.payment.service.impl;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.blogapp.dg_blogapp.exception.ResourceNotFoundException;
 import org.blogapp.dg_blogapp.model.BlogPost;
 import org.blogapp.dg_blogapp.model.User;
 import org.blogapp.dg_blogapp.payment.config.KhaltiConfig;
+import org.blogapp.dg_blogapp.payment.dto.AcceptDonationRequest;
+import org.blogapp.dg_blogapp.payment.dto.AcceptDonationResponse;
 import org.blogapp.dg_blogapp.payment.dto.DonateRequestDto;
+import org.blogapp.dg_blogapp.payment.dto.DonateResponseDto;
 import org.blogapp.dg_blogapp.payment.dto.InitiatePaymentRequest;
 import org.blogapp.dg_blogapp.payment.dto.InitiatePaymentResponse;
 import org.blogapp.dg_blogapp.payment.dto.PaymentVerifyResponse;
 import org.blogapp.dg_blogapp.payment.dto.PaymentVerifyRequest;
 import org.blogapp.dg_blogapp.payment.enums.DonationStatus;
+import org.blogapp.dg_blogapp.payment.enums.LedgerEntityStatus;
 import org.blogapp.dg_blogapp.payment.enums.PaymentStatus;
 import org.blogapp.dg_blogapp.payment.enums.TransactionType;
 import org.blogapp.dg_blogapp.payment.enums.WalletStatus;
 import org.blogapp.dg_blogapp.payment.model.Donation;
+import org.blogapp.dg_blogapp.payment.model.LedgerEntry;
 import org.blogapp.dg_blogapp.payment.model.PaymentTransaction;
 import org.blogapp.dg_blogapp.payment.model.Wallet;
 import org.blogapp.dg_blogapp.payment.repository.DonationRepository;
+import org.blogapp.dg_blogapp.payment.repository.LedgerEntryRepository;
 import org.blogapp.dg_blogapp.payment.repository.PaymentRepository;
 import org.blogapp.dg_blogapp.payment.repository.WalletRepository;
 import org.blogapp.dg_blogapp.payment.service.PaymentService;
@@ -29,7 +36,10 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.LocalDateTime;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -48,6 +58,10 @@ public class PaymentServiceImpl implements PaymentService {
     private final KhaltiConfig khaltiConfig;
     private final WebClient khaltiWebClient;
     private final WalletRepository walletRepository;
+    private final LedgerEntryRepository ledgerEntryRepository;
+
+
+    private static final String PLATFORM_USER_EMAIL = "platform@blogapp.com";
 
     @Override
     @Transactional
@@ -191,12 +205,12 @@ public class PaymentServiceImpl implements PaymentService {
 
             // Credit escrow wallet (optional - create if doesn't exist)
             try {
-                Wallet escrowWallet = walletRepository.findByUserAndStatus(donation.getReceiver(), WalletStatus.ESCROW)
+                Wallet escrowWallet = walletRepository.findByUserAndStatus(donation.getReceiver(), WalletStatus.PLATFORM_ESCROW)
                         .orElseGet(() -> {
                             log.info("Creating new escrow wallet for user: {}", donation.getReceiver().getId());
                             Wallet newWallet = new Wallet();
                             newWallet.setUser(donation.getReceiver());
-                            newWallet.setStatus(WalletStatus.ESCROW);
+                            newWallet.setStatus(WalletStatus.PLATFORM_ESCROW);
                             newWallet.setBalance(BigDecimal.ZERO);
                             return walletRepository.save(newWallet);
                         });
@@ -228,7 +242,129 @@ public class PaymentServiceImpl implements PaymentService {
     }
 
 
+    public AcceptDonationResponse acceptDonation(AcceptDonationRequest request){
+        UUID donorUserId = jwtService.getCurrentUserIdFromJwtToken();
+        log.info("Processing donation acceptance: donationId={}, donorUserId={}",
+                request.getDonationId(), donorUserId);
 
+        Donation donation = donationRepository.findById(request.getDonationId()).orElseThrow(()-> new RuntimeException("Donation not found"));
+
+        //validate sender id
+        if(!donation.getSender().getId().equals(donorUserId)){
+            throw new RuntimeException("Only the donor can accept this donation");
+        }
+
+        //validate donation status
+        if(donation.getStatus() != DonationStatus.COMPLETED){
+            throw new RuntimeException("Donation must be in completed state");
+        }
+
+        // 4. Check if already accepted
+        if (donation.getAcceptedAt() != null) {
+            throw new RuntimeException("Donation already accepted at: "
+                    + donation.getAcceptedAt());
+        }
+
+        BigDecimal totalAmount = donation.getAmount();
+        BigDecimal platformCommission = totalAmount.multiply(BigDecimal.valueOf(10)).divide(BigDecimal.valueOf(100)).setScale(2, RoundingMode.HALF_UP);
+        BigDecimal providerAmount = totalAmount.subtract(platformCommission);
+
+        //Get wallet
+        User reciever = donation.getReceiver();
+        Wallet escrowWallet = getOrCreateWallet(reciever,WalletStatus.PLATFORM_ESCROW);
+        Wallet activeWallet = getOrCreateWallet(reciever, WalletStatus.WRITER_WALLET);
+        Wallet platformWallet = getPlatformWallet();
+
+        // Validate escrow  has sufficient balance
+        if(escrowWallet.getBalance().compareTo(totalAmount) < 0){
+            throw new RuntimeException("Insufficient escrow balance. Required: "
+                    + totalAmount + ", Available: "
+                    + escrowWallet.getBalance());
+        }
+
+        //execute transfers (atomic)
+        transferFunds(escrowWallet, activeWallet, providerAmount,"Donation acceptance - Provider share", donation);
+        transferFunds(escrowWallet, platformWallet, platformCommission,"Donation acceptance - platform commission", donation);
+
+        //update donation
+        donation.setStatus(DonationStatus.COMPLETED);
+        donation.setAcceptedAt(LocalDateTime.now());
+        donation.setCommission(platformCommission);
+        donation.setProviderAmount(providerAmount);
+        donationRepository.save(donation);
+
+        log.info("Donation accepted successfully");
+
+        return AcceptDonationResponse.builder()
+                .donationId(donation.getId())
+                .totalAmount(totalAmount)
+                .platformCommission(platformCommission)
+                .providerAmount(providerAmount)
+                .providerName(reciever.getUsername())
+                .build();
+    }
+
+
+    private Wallet getOrCreateWallet(User user, WalletStatus status){
+        return walletRepository.findByUserAndStatus(user, status)
+                .orElseGet(()->{
+                    log.info("Creating {} wallet for user: {}", status, user);
+                    Wallet newWallet = new Wallet();
+                    newWallet.setUser(user);
+                    newWallet.setBalance(BigDecimal.ZERO);
+                    newWallet.setStatus(status);
+                    return walletRepository.save(newWallet);
+                });
+    }
+
+    private void transferFunds(Wallet fromWallet, Wallet toWallet, BigDecimal amount,String note, Donation donation) {
+        //Deduct the source
+        fromWallet.setBalance(fromWallet.getBalance().subtract(amount));
+        walletRepository.save(fromWallet);
+
+        //credit to destination
+        toWallet.setBalance(toWallet.getBalance().add(amount));
+        walletRepository.save(toWallet);
+
+        //create ledger entry
+        LedgerEntry ledgerEntry = LedgerEntry.builder()
+                .from_wallet(fromWallet)
+                .to_wallet(toWallet)
+                .amount(amount)
+                .status(LedgerEntityStatus.RELEASE)
+                .note(note + " - Donation: " + donation.getDonationNumber())
+                .build();
+        ledgerEntryRepository.save(ledgerEntry);
+        log.info("Transfer completed: {} -> {}, Amount: {}", fromWallet.getId(), toWallet.getId(), amount);
+
+
+    }
+
+    @Transactional(readOnly = true)
+    public List<DonateResponseDto> getPendingAcceptance(){
+        UUID donorUserId = jwtService.getCurrentUserIdFromJwtToken();
+        log.info("Fetching pending donations for donor: {}", donorUserId);
+        List<Donation> donations = donationRepository.findBySenderIdAndStatus(donorUserId,DonationStatus.COMPLETED);
+        return donations.stream().map(this::toDonationResponseDto).toList();
+    }
+
+    @Override
+    public BigDecimal getEscrowBalance() {
+        UUID userId = jwtService.getCurrentUserIdFromJwtToken();
+        log.info("Fetching escrow balance for user: {}", userId);
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        return walletRepository.findByUserAndStatus(user, WalletStatus.PLATFORM_ESCROW)
+                .map(Wallet::getBalance)
+                .orElse(BigDecimal.ZERO);
+    }
+
+    private Wallet getPlatformWallet() {
+        User platformWallet = userRepository.findByEmail(PLATFORM_USER_EMAIL)
+                .orElseThrow(()-> new RuntimeException("Platform user not found"));
+        return getOrCreateWallet(platformWallet, WalletStatus.PLATFORM_REVENUE);
+    }
 
     private Donation getDonationById(UUID donationId)
     {
@@ -245,5 +381,19 @@ public class PaymentServiceImpl implements PaymentService {
     private Donation getDonateById(UUID id)
     {
         return donationRepository.findById(id).orElseThrow(()->new RuntimeException("donate not found."));
+    }
+
+    private DonateResponseDto toDonationResponseDto(Donation donation) {
+        return DonateResponseDto.builder()
+                .id(donation.getId())
+                .donationNumber(donation.getDonationNumber())
+                .amount(donation.getAmount())
+                .receiverUsername(donation.getReceiver().getUsername())
+                .postTitle(donation.getBlogPost() != null
+                        ? donation.getBlogPost().getTitle()
+                        : "Direct donation")
+                .status(donation.getStatus())
+                .acceptedAt(donation.getAcceptedAt())
+                .build();
     }
 }

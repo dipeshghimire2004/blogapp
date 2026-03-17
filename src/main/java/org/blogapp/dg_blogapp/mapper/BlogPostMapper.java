@@ -1,5 +1,6 @@
 package org.blogapp.dg_blogapp.mapper;
 
+import org.blogapp.dg_blogapp.config.GlobalMapperConfig;
 import org.blogapp.dg_blogapp.dto.BlogPostRequestDTO;
 import org.blogapp.dg_blogapp.dto.BlogPostResponseDTO;
 import org.blogapp.dg_blogapp.model.BlogPost;
@@ -12,11 +13,13 @@ import java.util.List;
 /**
  * Mapper class to convert between BlogPost entity and DTOs
  */
-@Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.IGNORE)
-public interface BlogPostMapper {
+@Mapper(config = GlobalMapperConfig.class)
+public interface BlogPostMapper
+{
 
     /**
      * Converts a BlogPost entity into a BlogPostResponseDTO
+     *
      * @param blogPost the BlogPost to convert
      * @return the corresponding BlogPostResponseDTO
      */
@@ -29,6 +32,7 @@ public interface BlogPostMapper {
     /**
      * Converts a BlogPostRequestDTO into a BlogPost entity.
      * Ignores user, id, createdAt, and updatedAt (they will be set manually).
+     *
      * @param blogPostRequestDTO the request data
      * @return BlogPost entity
      */

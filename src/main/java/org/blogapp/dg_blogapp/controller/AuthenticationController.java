@@ -3,6 +3,7 @@ package org.blogapp.dg_blogapp.controller;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -26,14 +27,12 @@ import reactor.core.publisher.Mono;
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- * REST controller for authentication endpoints.
- */
+
 @RestController
 @RequestMapping("/auth")
 @RequiredArgsConstructor
 @Slf4j
-//@Tag(name="Authentication", description="User authentication and registration endpoints")
+@Tag(name="Authentication", description="User authentication and registration endpoints")
 public class AuthenticationController
 {
 
@@ -42,16 +41,7 @@ public class AuthenticationController
     private final JwtService jwtService;
 
 
-//    @GetMapping("/{id}")
-//    public Mono<ReactiveUser> getUser(@PathVariable Long id){
-//        return authService.getUserById(id);
-//    }
-//
-//    @GetMapping()
-//    public Flux<ReactiveUser> allUsers()
-//    {
-//        return authService.getAllUsers();
-//    }
+
 
     @Operation(summary = "Register a new user", description = "Creates a new user with USER role")
     @ApiResponses(value = {
