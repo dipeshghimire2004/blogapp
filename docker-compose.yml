@@ -14,7 +14,7 @@ services:
       - dev_network
     depends_on:
       - redis-blogapp
-      - localstack
+      - minio-dev
       - postgres-dev
 
   postgres-dev:
@@ -37,22 +37,24 @@ services:
     networks:
       - dev_network
 
-  localstack:
-    image: localstack/localstack:latest  # Uses the latest version of LocalStack.
-    container_name: localstack  # Assigns a fixed name to the container.
+  minio-dev:
+    image: minio/minio
+    container_name: minio-blogapp-dev
     ports:
-      - "4566:4566"
-    #    ports:
-    #      - "4566:4566" # Maps the LocalStack API gateway port.
-    #      - "4572:4572" # Maps the S3 service port.
+      - "${MINIO_PORT_EXPOSE:-9000}:9000"
+      - "${MINIO_WEB_CONSOLE_PORT:-9001}:9001"
     environment:
-      - SERVICES=s3  # Enables only the S3 service in LocalStack.
-      - DEFAULT_REGION=us-west-2  # Sets the AWS region for the local environment.
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
     volumes:
-      - ./localstack/s3:/docker-entrypoint-initaws.d  # Mounts a local directory to persist data across container restarts.
+      - minio_data:/data
+    command: server /data --console-address ":9001"
     networks:
       - dev_network
 
 networks:
   dev_network:
     driver: bridge
+
+volumes:
+  minio_data:

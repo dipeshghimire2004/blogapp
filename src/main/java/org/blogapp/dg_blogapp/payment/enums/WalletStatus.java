@@ -4,7 +4,7 @@ import lombok.Getter;
 
 @Getter
 public enum WalletStatus {
-    ESCROW,
+    PLATFORM_ESCROW,
     WRITER_WALLET,
     PLATFORM_REVENUE,
     DISPUTE_HOLD,

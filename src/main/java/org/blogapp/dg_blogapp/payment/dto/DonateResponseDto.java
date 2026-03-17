@@ -9,6 +9,7 @@ import lombok.Setter;
 import org.blogapp.dg_blogapp.payment.enums.DonationStatus;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Getter
@@ -17,14 +18,17 @@ import java.util.UUID;
 @NoArgsConstructor
 @Builder
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class DonateResponseDto
-{
+public class DonateResponseDto {
 
     private UUID id;
 
     private UUID receiverId;
 
     private UUID senderId;
+
+    private String donationNumber;
+
+    private String receiverUsername;
 
     private UUID postId;
 
@@ -33,4 +37,6 @@ public class DonateResponseDto
     private DonationStatus status;
 
     private String postTitle;
+
+    private LocalDateTime acceptedAt;
 }
