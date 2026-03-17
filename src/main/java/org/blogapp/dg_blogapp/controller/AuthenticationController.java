@@ -39,6 +39,7 @@ public class AuthenticationController
 
     private final AuthenticationService authService;
     private final CookieUtil cookieUtil;
+    private final JwtService jwtService;
 
 
 //    @GetMapping("/{id}")
@@ -107,6 +108,14 @@ public class AuthenticationController
 
         // Handle HTTP concern: Build response
         return ResponseEntity.ok(Map.of("message", "Logged out successfully"));
+    }
+
+    @GetMapping("/authme")
+    public ResponseEntity<Object> profileMe() {
+        Map<String,Object> map = new HashMap<>();
+        map.put("user_id",jwtService.getCurrentUserIdFromJwtToken());
+//        map.put("roles", SecurityContextHolder.getContext().getAuthentication().getAuthorities().toString());
+        return ResponseEntity.ok(map);
     }
 }
 
